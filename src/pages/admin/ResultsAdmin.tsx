@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { client } from '../../lib/amplify-client';
 import { unwrap } from '../../lib/unwrap';
-import { e1Blocks } from '../../data/content';
 import { levelFromSum, LEVEL_LABEL } from '../../lib/scoring';
 import type { Level } from '../../lib/scoring';
+import type { RubricBlock } from '../../data/content';
 
 type AttemptRow = {
   id: string;
@@ -49,7 +49,15 @@ function downloadCsv(filename: string, csv: string) {
   URL.revokeObjectURL(url);
 }
 
-function ScoringForm({ submission, onSaved }: { submission: SubmissionRow; onSaved: () => void }) {
+function ScoringForm({
+  submission,
+  e1Blocks,
+  onSaved,
+}: {
+  submission: SubmissionRow;
+  e1Blocks: RubricBlock[];
+  onSaved: () => void;
+}) {
   const initial = (submission.teacherScores as Record<string, number>) ?? {};
   const [scores, setScores] = useState<Record<string, number>>(initial);
   const [comment, setComment] = useState(submission.teacherComment ?? '');
@@ -126,6 +134,7 @@ export default function ResultsAdmin() {
   const [tab, setTab] = useState<'attempts' | 'submissions'>('attempts');
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
+  const [e1Blocks, setE1Blocks] = useState<RubricBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scoring, setScoring] = useState<SubmissionRow | null>(null);
@@ -134,12 +143,24 @@ export default function ResultsAdmin() {
     setLoading(true);
     setError(null);
     try {
-      const [a, s] = await Promise.all([
+      const [a, s, questions] = await Promise.all([
         unwrap(client.models.Attempt.list()),
         unwrap(client.models.ProjectSubmission.list()),
+        unwrap(client.models.DiagQuestion.list()),
       ]);
       setAttempts(a as AttemptRow[]);
       setSubmissions(s as SubmissionRow[]);
+
+      const byBlock = new Map<string, RubricBlock>();
+      for (const q of questions) {
+        if (q.instrumentCode !== 'e1') continue;
+        const label = q.block ?? '';
+        if (!byBlock.has(label)) byBlock.set(label, { label, maxPoints: 0, criteria: [] });
+        const block = byBlock.get(label)!;
+        block.criteria.push({ code: q.rubricCode ?? '', text: q.text });
+        block.maxPoints += q.maxPoints ?? 3;
+      }
+      setE1Blocks([...byBlock.values()]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Бекенд ще не розгорнуто.');
     } finally {
@@ -251,6 +272,7 @@ export default function ResultsAdmin() {
               <h4>Оцінювання: {scoring.title}</h4>
               <ScoringForm
                 submission={scoring}
+                e1Blocks={e1Blocks}
                 onSaved={() => {
                   setScoring(null);
                   load();

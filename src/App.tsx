@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import RequireAdmin from './components/RequireAdmin';
+import RequireAuth from './components/RequireAuth';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -31,7 +32,14 @@ export default function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/modules" element={<ModulesPage />} />
             <Route path="/matrix" element={<MatrixPage />} />
-            <Route path="/diag" element={<DiagnosticsPage />} />
+            <Route
+              path="/diag"
+              element={
+                <RequireAuth>
+                  <DiagnosticsPage />
+                </RequireAuth>
+              }
+            />
             <Route path="/exp" element={<ExperimentPage />} />
             <Route path="/res" element={<ResourcesPage />} />
             <Route path="/login" element={<LoginPage />} />

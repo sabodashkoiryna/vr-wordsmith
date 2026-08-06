@@ -3,16 +3,21 @@ import { manageAdmins } from '../functions/manage-admins/resource';
 
 /*
  * Схема відповідає моделі даних з архітектурного плану:
- * - контент (Module..DiagQuestion) керує група Admins, читають усі,
- *   включно з гостями — публічні сторінки курсу видно без логіну;
+ * - контент (Module..EvidenceTile) керує група Admins, читають усі —
+ *   і гості (allow.guest, IAM unauth role), і залогінені відвідувачі
+ *   (allow.authenticated('identityPool'), IAM auth role) — публічні
+ *   сторінки курсу видно як без логіну, так і з ним;
+ * - DiagInstrument/DiagQuestion читають гості + залогінені через
+ *   userPool (allow.authenticated() за замовчуванням), бо /diag уже
+ *   захищено логіном — і за замовчуванням запит іде саме через userPool;
  * - користувацькі дані (UserProfile..ProjectSubmission) — власник
  *   пише/читає свій запис, Admins читають (і, де потрібно, пишуть) усі.
  *
  * correctIndex у DiagQuestion має власне, суворіше правило на рівні поля:
- * лише Admins можуть його читати, тож відповідь тесту Т-1 не потрапляє
- * у публічний бандл (на відміну від поточного legacy HTML). Оцінює тест
- * custom-мутація gradeTest (Lambda, крок 5 плану), яка читає це поле
- * на сервері.
+ * бачать лише залогінені й Admins, не гості — тож відповідь тесту Т-1
+ * не потрапляє у публічний бандл (на відміну від legacy HTML). Це
+ * тимчасовий компроміс, доки Т-1 рахується на клієнті; переїде на
+ * серверну gradeTest-мутацію (крок 5 плану).
  */
 const schema = a.schema({
   // ---------- Контент курсу (Admins CRUD, читають усі) ----------
@@ -27,7 +32,11 @@ const schema = a.schema({
       tasks: a.json(), // [{code, text}]
       controlNote: a.string(),
     })
-    .authorization((allow) => [allow.guest().to(['read']), allow.groups(['Admins'])]),
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated('identityPool').to(['read']),
+      allow.groups(['Admins']),
+    ]),
 
   MatrixRow: a
     .model({
@@ -38,7 +47,11 @@ const schema = a.schema({
       criterion: a.string().required(),
       instrument: a.string().required(),
     })
-    .authorization((allow) => [allow.guest().to(['read']), allow.groups(['Admins'])]),
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated('identityPool').to(['read']),
+      allow.groups(['Admins']),
+    ]),
 
   ReadinessLevel: a
     .model({
@@ -47,7 +60,11 @@ const schema = a.schema({
       description: a.string().required(),
       boundsPct: a.string().required(),
     })
-    .authorization((allow) => [allow.guest().to(['read']), allow.groups(['Admins'])]),
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated('identityPool').to(['read']),
+      allow.groups(['Admins']),
+    ]),
 
   Resource: a
     .model({
@@ -57,7 +74,11 @@ const schema = a.schema({
       title: a.string().required(),
       text: a.string().required(),
     })
-    .authorization((allow) => [allow.guest().to(['read']), allow.groups(['Admins'])]),
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated('identityPool').to(['read']),
+      allow.groups(['Admins']),
+    ]),
 
   ExperimentStage: a
     .model({
@@ -66,7 +87,11 @@ const schema = a.schema({
       title: a.string().required(),
       text: a.string().required(),
     })
-    .authorization((allow) => [allow.guest().to(['read']), allow.groups(['Admins'])]),
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated('identityPool').to(['read']),
+      allow.groups(['Admins']),
+    ]),
 
   TimelineEntry: a
     .model({
@@ -74,7 +99,11 @@ const schema = a.schema({
       period: a.string().required(),
       text: a.string().required(),
     })
-    .authorization((allow) => [allow.guest().to(['read']), allow.groups(['Admins'])]),
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated('identityPool').to(['read']),
+      allow.groups(['Admins']),
+    ]),
 
   EvidenceTile: a
     .model({
@@ -82,7 +111,11 @@ const schema = a.schema({
       title: a.string().required(),
       text: a.string().required(),
     })
-    .authorization((allow) => [allow.guest().to(['read']), allow.groups(['Admins'])]),
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated('identityPool').to(['read']),
+      allow.groups(['Admins']),
+    ]),
 
   DiagInstrument: a
     .model({
@@ -93,7 +126,11 @@ const schema = a.schema({
       boundsLow: a.integer(),
       boundsHigh: a.integer(),
     })
-    .authorization((allow) => [allow.guest().to(['read']), allow.groups(['Admins'])]),
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated().to(['read']),
+      allow.groups(['Admins']),
+    ]),
 
   DiagQuestion: a
     .model({
@@ -104,9 +141,17 @@ const schema = a.schema({
       options: a.string().array(),
       rubricCode: a.string(), // для Е-1: 'А1'..'В4'
       maxPoints: a.integer(),
-      correctIndex: a.integer().authorization((allow) => [allow.groups(['Admins'])]),
+      // Тимчасовий компроміс: доки Т-1 рахується на клієнті (немає ще
+      // серверної gradeTest-мутації, крок 5 плану), correctIndex видно
+      // залогіненим користувачам, але не гостям — це вже краще за legacy,
+      // де відповідь бачив у DevTools будь-хто без входу.
+      correctIndex: a.integer().authorization((allow) => [allow.authenticated().to(['read']), allow.groups(['Admins'])]),
     })
-    .authorization((allow) => [allow.guest().to(['read']), allow.groups(['Admins'])]),
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated().to(['read']),
+      allow.groups(['Admins']),
+    ]),
 
   // ---------- Користувацькі дані (owner-based) ----------
   UserProfile: a

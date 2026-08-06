@@ -1,21 +1,35 @@
-import { useState } from 'react';
-import { modules } from '../data/content';
+import { useEffect, useState } from 'react';
+import { client } from '../lib/amplify-client';
+import { unwrap } from '../lib/unwrap';
+
+type ModuleItem = {
+  id: string;
+  order: number;
+  code: string;
+  component: string;
+  title: string;
+  weeks: string;
+  topics?: (string | null)[] | null;
+  tasks?: unknown;
+  controlNote?: string | null;
+};
 
 const CHIP_CLASS: Record<string, string> = { М: 'm', К: 'k', Д: 'd', Р: 'r' };
+const COMPONENT_LABEL: Record<string, string> = {
+  М: 'мотиваційний',
+  К: 'когнітивний',
+  Д: 'діяльнісний',
+  Р: 'рефлексійний',
+};
 
-function ModuleAccordionItem({
-  m,
-  open,
-  onToggle,
-}: {
-  m: (typeof modules)[number];
-  open: boolean;
-  onToggle: () => void;
-}) {
+function ModuleAccordionItem({ m, open, onToggle }: { m: ModuleItem; open: boolean; onToggle: () => void }) {
+  const tasks = (Array.isArray(m.tasks) ? m.tasks : []) as { code: string; text: string }[];
+  const topics = (m.topics ?? []).filter(Boolean) as string[];
+
   return (
-    <div className={`module${open ? ' open' : ''}`} data-c={m.c}>
+    <div className={`module${open ? ' open' : ''}`} data-c={m.component}>
       <button className="acc-head" aria-expanded={open} onClick={onToggle}>
-        <span className="mnum">{m.n}</span>
+        <span className="mnum">{m.code}</span>
         <span className="mtitle">
           <b>{m.title}</b>
           <small>{m.weeks}</small>
@@ -25,26 +39,42 @@ function ModuleAccordionItem({
       <div className="acc-body">
         <h4>Теми</h4>
         <ul>
-          {m.topics.map((t) => (
+          {topics.map((t) => (
             <li key={t}>{t}</li>
           ))}
         </ul>
         <h4>Завдання</h4>
-        {m.tasks.map((t) => (
+        {tasks.map((t) => (
           <div className="task" key={t.code}>
             <code>{t.code}</code>
             {t.text}
           </div>
         ))}
         <h4>Контроль</h4>
-        <p style={{ fontSize: 15 }}>{m.ctrl}</p>
+        <p style={{ fontSize: 15 }}>{m.controlNote}</p>
       </div>
     </div>
   );
 }
 
 export default function ModulesPage() {
+  const [modules, setModules] = useState<ModuleItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [openIndex, setOpenIndex] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await unwrap(client.models.Module.list({ authMode: 'identityPool' }));
+        setModules([...data].sort((a, b) => a.order - b.order) as ModuleItem[]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Не вдалося завантажити модулі.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   return (
     <section className="page">
@@ -54,14 +84,16 @@ export default function ModulesPage() {
         Кожен модуль реалізує одну педагогічну умову та формує відповідний компонент готовності:{' '}
         {(['М', 'К', 'Д', 'Р'] as const).map((c) => (
           <span className={`chip ${CHIP_CLASS[c]}`} key={c}>
-            {c} — {{ М: 'мотиваційний', К: 'когнітивний', Д: 'діяльнісний', Р: 'рефлексійний' }[c]}
+            {c} — {COMPONENT_LABEL[c]}
           </span>
         ))}
       </p>
+      {loading && <p className="instr-note">Завантаження…</p>}
+      {error && <p className="error">{error}</p>}
       <div>
         {modules.map((m, i) => (
           <ModuleAccordionItem
-            key={m.n}
+            key={m.id}
             m={m}
             open={openIndex === i}
             onToggle={() => setOpenIndex(openIndex === i ? -1 : i)}
