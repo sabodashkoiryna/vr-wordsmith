@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function LoginPage() {
@@ -44,6 +44,9 @@ export default function LoginPage() {
         <button className="btn primary" type="submit" disabled={busy}>
           {busy ? 'Входимо…' : 'Увійти'}
         </button>
+        <p className="hint">
+          Ще немає акаунту? <Link to="/signup">Зареєструватися</Link>
+        </p>
       </form>
     </section>
   );

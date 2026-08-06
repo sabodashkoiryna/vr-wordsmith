@@ -10,6 +10,7 @@ import DiagnosticsPage from './pages/DiagnosticsPage';
 import ExperimentPage from './pages/ExperimentPage';
 import ResourcesPage from './pages/ResourcesPage';
 import LoginPage from './pages/auth/LoginPage';
+import SignUpPage from './pages/auth/SignUpPage';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ModulesAdmin from './pages/admin/content/ModulesAdmin';
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/exp" element={<ExperimentPage />} />
             <Route path="/res" element={<ResourcesPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
             <Route
               path="/admin"
               element={
