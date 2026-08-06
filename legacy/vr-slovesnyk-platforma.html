@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VR-Словесник — платформа підготовки майбутніх учителів</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1C1633;
+  --ink-soft:#3A3160;
+  --paper:#F7F6FC;
+  --card:#FFFFFF;
+  --mist:#E8E4F7;
+  --violet:#5B3DF5;
+  --violet-deep:#3B22B8;
+  --teal:#0FA895;
+  --amber:#E9930C;
+  --rose:#D8456B;
+  --radius:18px;
+  --font-display:'Unbounded',system-ui,sans-serif;
+  --font-body:'IBM Plex Serif',Georgia,serif;
+  --font-ui:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:17px;line-height:1.65}
+
+/* ---------- header ---------- */
+header{position:sticky;top:0;z-index:50;background:rgba(247,246,252,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--mist)}
+.hwrap{max-width:1160px;margin:0 auto;display:flex;align-items:center;gap:28px;padding:14px 24px}
+.logo{font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:.02em;color:var(--ink);text-decoration:none;white-space:nowrap}
+.logo em{font-style:normal;color:var(--violet)}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{font-family:var(--font-ui);font-size:12.5px;letter-spacing:.04em;border:none;background:none;color:var(--ink-soft);padding:8px 12px;border-radius:999px;cursor:pointer}
+nav button:hover{background:var(--mist)}
+nav button.active{background:var(--ink);color:#fff}
+nav button:focus-visible,.btn:focus-visible,.acc-head:focus-visible,input:focus-visible+span{outline:3px solid var(--violet);outline-offset:2px}
+
+main{max-width:1160px;margin:0 auto;padding:0 24px 90px}
+section.page{display:none;padding-top:44px}
+section.page.visible{display:block;animation:rise .45s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.eyebrow{font-family:var(--font-ui);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin-bottom:14px}
+h1{font-family:var(--font-display);font-weight:800;font-size:clamp(30px,4.6vw,54px);line-height:1.08;letter-spacing:-.01em}
+h2{font-family:var(--font-display);font-weight:600;font-size:clamp(21px,2.6vw,30px);line-height:1.2;margin-bottom:18px}
+h3{font-family:var(--font-display);font-weight:600;font-size:16px;margin-bottom:10px}
+.lead{font-size:19px;color:var(--ink-soft);max-width:640px;margin-top:20px}
+.btn{display:inline-block;font-family:var(--font-ui);font-size:13.5px;letter-spacing:.05em;padding:13px 24px;border-radius:999px;border:2px solid var(--ink);cursor:pointer;text-decoration:none}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.primary:hover{background:var(--violet-deep);border-color:var(--violet-deep)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.ghost:hover{background:var(--mist)}
+
+/* ---------- hero / portal ---------- */
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding:56px 0 30px}
+.portal{position:relative;aspect-ratio:4/4.4;border-radius:46% 46% 42% 42%/34% 34% 60% 60%;overflow:hidden;
+  background:linear-gradient(178deg,#241A5E 0%,#4A2ED0 34%,#7A5CFF 58%,#F0A46B 82%,#FFE0B8 100%);
+  box-shadow:0 40px 80px -30px rgba(59,34,184,.55), inset 0 0 0 10px rgba(255,255,255,.14);
+  transform-style:preserve-3d;transition:transform .25s ease}
+.portal .stars{position:absolute;inset:0;background-image:radial-gradient(1.5px 1.5px at 20% 18%,#fff 60%,transparent 61%),radial-gradient(1px 1px at 64% 10%,#fff 60%,transparent 61%),radial-gradient(1.5px 1.5px at 82% 26%,#fff 60%,transparent 61%),radial-gradient(1px 1px at 38% 30%,#fff 60%,transparent 61%);opacity:.8}
+.ridge{position:absolute;left:-8%;right:-8%;height:44%;border-radius:50% 50% 0 0}
+.ridge.r1{bottom:-6%;background:#170F3A}
+.ridge.r2{bottom:2%;background:#2A1C6E;transform:translateX(6%) scaleX(1.15)}
+.ridge.r3{bottom:12%;background:#41309A;transform:translateX(-8%) scaleX(1.2);opacity:.85}
+.portal figure{position:absolute;left:10%;right:10%;top:16%;color:#fff}
+.portal blockquote{font-family:var(--font-body);font-style:italic;font-size:clamp(15px,1.7vw,19.5px);line-height:1.5;text-shadow:0 2px 18px rgba(23,15,58,.6)}
+.portal figcaption{font-family:var(--font-ui);font-size:11.5px;letter-spacing:.1em;margin-top:14px;opacity:.85}
+.portal .lens{position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 -30px 60px rgba(23,15,58,.45),inset 0 30px 60px rgba(255,255,255,.12);pointer-events:none}
+.hero-note{font-family:var(--font-ui);font-size:12px;color:var(--ink-soft);text-align:center;margin-top:14px;letter-spacing:.04em}
+
+.path{display:flex;flex-wrap:wrap;gap:0;margin-top:44px;border-top:1px solid var(--mist);padding-top:26px}
+.path span{font-family:var(--font-ui);font-size:12.5px;letter-spacing:.05em;color:var(--ink-soft);display:flex;align-items:center}
+.path span::after{content:"→";margin:0 12px;color:var(--violet)}
+.path span:last-child{color:var(--violet-deep);font-weight:500}
+.path span:last-child::after{content:""}
+
+.threecol{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:56px}
+.tile{background:var(--card);border:1px solid var(--mist);border-radius:var(--radius);padding:26px}
+.tile b{font-family:var(--font-display);font-weight:600;font-size:15px;display:block;margin-bottom:10px}
+.tile p{font-size:15.5px;color:var(--ink-soft)}
+
+/* ---------- modules ---------- */
+.module{background:var(--card);border:1px solid var(--mist);border-radius:var(--radius);margin-bottom:16px;overflow:hidden}
+.acc-head{width:100%;display:flex;align-items:center;gap:18px;background:none;border:none;text-align:left;padding:22px 24px;cursor:pointer}
+.mnum{font-family:var(--font-ui);font-size:12px;color:#fff;background:var(--violet);border-radius:8px;padding:6px 10px;letter-spacing:.06em;flex-shrink:0}
+.module[data-c="М"] .mnum{background:var(--rose)}
+.module[data-c="К"] .mnum{background:var(--violet)}
+.module[data-c="Д"] .mnum{background:var(--teal)}
+.module[data-c="Р"] .mnum{background:var(--amber)}
+.mtitle{flex:1}
+.mtitle b{font-family:var(--font-display);font-weight:600;font-size:16.5px;display:block}
+.mtitle small{font-family:var(--font-ui);font-size:11.5px;color:var(--ink-soft);letter-spacing:.05em}
+.chev{font-size:20px;color:var(--violet);transition:transform .25s}
+.module.open .chev{transform:rotate(90deg)}
+.acc-body{display:none;padding:0 24px 26px;border-top:1px dashed var(--mist)}
+.module.open .acc-body{display:block}
+.acc-body h4{font-family:var(--font-ui);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--violet-deep);margin:22px 0 10px}
+.acc-body ul{list-style:none}
+.acc-body li{padding:7px 0 7px 22px;position:relative;font-size:15.5px}
+.acc-body li::before{content:"";position:absolute;left:2px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--mist);border:2px solid var(--violet)}
+.task{background:var(--paper);border-radius:12px;padding:14px 16px;margin:8px 0;font-size:15px}
+.task code{font-family:var(--font-ui);font-size:12px;color:var(--violet-deep);margin-right:8px}
+
+/* ---------- matrix table ---------- */
+.tablewrap{overflow-x:auto;background:var(--card);border:1px solid var(--mist);border-radius:var(--radius)}
+table{border-collapse:collapse;width:100%;min-width:840px;font-size:14.5px}
+th,td{padding:14px 16px;text-align:left;vertical-align:top;border-bottom:1px solid var(--mist)}
+th{font-family:var(--font-ui);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);background:var(--paper)}
+tr:last-child td{border-bottom:none}
+.chip{display:inline-block;font-family:var(--font-ui);font-size:11px;letter-spacing:.05em;padding:4px 10px;border-radius:999px;color:#fff}
+.chip.m{background:var(--rose)}.chip.k{background:var(--violet)}.chip.d{background:var(--teal)}.chip.r{background:var(--amber)}
+
+/* ---------- diagnostics ---------- */
+.diag-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:26px 0}
+.diag-tabs button{font-family:var(--font-ui);font-size:12.5px;padding:10px 16px;border-radius:12px;border:1.5px solid var(--mist);background:var(--card);cursor:pointer;color:var(--ink-soft)}
+.diag-tabs button.active{border-color:var(--violet);color:var(--violet-deep);background:#EFEBFF}
+.instrument{display:none;background:var(--card);border:1px solid var(--mist);border-radius:var(--radius);padding:30px}
+.instrument.visible{display:block}
+.instr-note{font-size:15px;color:var(--ink-soft);margin-bottom:24px;max-width:720px}
+.qitem{padding:16px 0;border-bottom:1px dashed var(--mist)}
+.qitem p{font-size:15.5px;margin-bottom:10px}
+.qnum{font-family:var(--font-ui);font-size:12px;color:var(--violet-deep);margin-right:8px}
+.likert{display:flex;gap:8px;flex-wrap:wrap}
+.likert label{cursor:pointer}
+.likert input{position:absolute;opacity:0;width:0}
+.likert span{display:inline-block;font-family:var(--font-ui);font-size:13px;min-width:42px;text-align:center;padding:8px 0;border:1.5px solid var(--mist);border-radius:10px;background:var(--paper)}
+.likert input:checked+span{background:var(--violet);border-color:var(--violet);color:#fff}
+.opts{display:grid;gap:8px}
+.opts label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:10px 12px;border:1.5px solid var(--mist);border-radius:10px;background:var(--paper);font-size:15px}
+.opts input{margin-top:4px;accent-color:var(--violet)}
+.opts label.correct{border-color:var(--teal);background:#E7F7F4}
+.opts label.wrong{border-color:var(--rose);background:#FBEBEF}
+.result{margin-top:26px;padding:20px 22px;border-radius:14px;font-size:16px;display:none}
+.result.visible{display:block}
+.result.low{background:#FBEBEF;border:1.5px solid var(--rose)}
+.result.mid{background:#FDF3E2;border:1.5px solid var(--amber)}
+.result.high{background:#E7F7F4;border:1.5px solid var(--teal)}
+.result b{font-family:var(--font-display);font-weight:600;display:block;margin-bottom:6px}
+.instrument .btn{margin-top:24px}
+.rubric td:first-child{font-family:var(--font-ui);font-size:12px;color:var(--violet-deep);white-space:nowrap}
+
+/* ---------- experiment ---------- */
+.stages{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:10px}
+.stage{background:var(--card);border:1px solid var(--mist);border-radius:var(--radius);padding:26px;position:relative}
+.stage::before{content:attr(data-n);font-family:var(--font-display);font-weight:800;font-size:44px;color:var(--mist);position:absolute;top:14px;right:20px}
+.stage b{font-family:var(--font-display);font-weight:600;font-size:15px;display:block;margin-bottom:10px;max-width:80%}
+.stage p{font-size:15px;color:var(--ink-soft)}
+.timeline{margin-top:44px}
+.trow{display:grid;grid-template-columns:170px 1fr;gap:20px;padding:16px 0;border-bottom:1px dashed var(--mist);font-size:15.5px}
+.trow span{font-family:var(--font-ui);font-size:12.5px;color:var(--violet-deep);letter-spacing:.04em}
+
+/* ---------- resources ---------- */
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.rcard{background:var(--card);border:1px solid var(--mist);border-radius:var(--radius);padding:22px}
+.rcard b{font-family:var(--font-display);font-weight:600;font-size:15px;display:block;margin-bottom:8px}
+.rcard small{font-family:var(--font-ui);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);display:block;margin-bottom:10px}
+.rcard p{font-size:14.5px;color:var(--ink-soft)}
+
+footer{border-top:1px solid var(--mist);margin-top:40px}
+.fwrap{max-width:1160px;margin:0 auto;padding:28px 24px;font-family:var(--font-ui);font-size:12px;color:var(--ink-soft);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;gap:36px}
+  .threecol,.stages{grid-template-columns:1fr}
+  .portal{max-width:420px;margin:0 auto}
+  .trow{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hwrap">
+    <a class="logo" href="#" onclick="go('home');return false;">VR-<em>Словесник</em></a>
+    <nav id="mainnav">
+      <button class="active" data-p="home">Головна</button>
+      <button data-p="modules">Модулі</button>
+      <button data-p="matrix">Матриця</button>
+      <button data-p="diag">Діагностика</button>
+      <button data-p="exp">Експеримент</button>
+      <button data-p="res">Ресурси</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= HOME ================= -->
+<section class="page visible" id="page-home">
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Онлайн-платформа підготовки майбутніх учителів</div>
+      <h1>Українська словесність зустрічає віртуальну реальність</h1>
+      <p class="lead">Навчальний курс для майбутніх учителів української мови та літератури: від першого занурення у віртуальний світ художнього твору — до власного VR-уроку.</p>
+      <div style="display:flex;gap:12px;margin-top:30px;flex-wrap:wrap">
+        <a class="btn primary" href="#" onclick="go('modules');return false;">Перейти до модулів</a>
+        <a class="btn ghost" href="#" onclick="go('diag');return false;">Пройти діагностику</a>
+      </div>
+      <div class="path" aria-label="Траєкторія розвитку">
+        <span>Споживач</span><span>Аналітик</span><span>Проєктувальник</span><span>Практик</span><span>Експерт</span>
+      </div>
+    </div>
+    <div>
+      <div class="portal" id="portal" aria-hidden="true">
+        <div class="stars"></div>
+        <div class="ridge r3"></div><div class="ridge r2"></div><div class="ridge r1"></div>
+        <figure>
+          <blockquote>«Іван був дев'ятнадцятою дитиною в гуцульській родині Палійчуків…»</blockquote>
+          <figcaption>М. КОЦЮБИНСЬКИЙ · ТІНІ ЗАБУТИХ ПРЕДКІВ · VR-МАНДРІВКА КАРПАТАМИ</figcaption>
+        </figure>
+        <div class="lens"></div>
+      </div>
+      <p class="hero-note">наведіть курсор — портал реагує на погляд</p>
+    </div>
+  </div>
+
+  <div class="threecol">
+    <div class="tile"><b>60 годин · 2 кредити ЄКТС</b><p>5 модулів упродовж семестру: 20 годин синхронної роботи та 40 годин самостійної роботи на платформі.</p></div>
+    <div class="tile"><b>Бюджетні технології</b><p>Cardboard-окуляри зі смартфоном, 360°-тури, CoSpaces Edu і ThingLink — рішення, реалістичні для української школи.</p></div>
+    <div class="tile"><b>Портфоліо замість іспиту</b><p>Підсумок курсу — власний VR-фрагмент уроку, проведене мікровикладання та дві експертні рецензії.</p></div>
+  </div>
+</section>
+
+<!-- ================= MODULES ================= -->
+<section class="page" id="page-modules">
+  <div class="eyebrow">Навчальний курс · 15 тижнів</div>
+  <h2>П'ять модулів — чотири компоненти готовності</h2>
+  <p class="instr-note">Кожен модуль реалізує одну педагогічну умову та формує відповідний компонент готовності: <span class="chip m">М — мотиваційний</span> <span class="chip k">К — когнітивний</span> <span class="chip d">Д — діяльнісний</span> <span class="chip r">Р — рефлексійний</span></p>
+  <div id="modlist"></div>
+</section>
+
+<!-- ================= MATRIX ================= -->
+<section class="page" id="page-matrix">
+  <div class="eyebrow">Методологічний каркас</div>
+  <h2>Матриця «умова — модуль — компонент — діагностика»</h2>
+  <p class="instr-note">Наскрізна відповідність доводить: експеримент не випадковий, а прямо реалізує структурно-функціональну модель дослідження.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Педагогічна умова</th><th>Модуль платформи</th><th>Компонент готовності</th><th>Критерій</th><th>Інструмент</th></tr></thead>
+      <tbody>
+        <tr><td>Формування позитивної мотивації та ціннісного ставлення до VR у мовно-літературній освіті</td><td>1 · «Навіщо словеснику віртуальна реальність?»</td><td><span class="chip m">Мотиваційно-ціннісний</span></td><td>Мотиваційний</td><td>Анкета А-1</td></tr>
+        <tr><td>Інтеграція фахової, методичної та цифрової підготовки на засадах TPACK</td><td>2 · «Основи імерсивних технологій» + 3 · «Методика VR-уроку»</td><td><span class="chip k">Когнітивний</span></td><td>Знаннєвий</td><td>Тест Т-1</td></tr>
+        <tr><td>Практико-орієнтована діяльність в імерсивному середовищі ЗВО</td><td>4 · «VR-майстерня: від ідеї до уроку»</td><td><span class="chip d">Діяльнісний</span></td><td>Операційний</td><td>Картка Е-1, мікровикладання</td></tr>
+        <tr><td>Розвиток рефлексійно-оцінювальної здатності</td><td>5 · «Рефлексія та експертиза» (наскрізний)</td><td><span class="chip r">Рефлексійний</span></td><td>Оцінно-рефлексійний</td><td>Шкала С-1, взаємні рецензії</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 style="margin-top:50px">Рівні готовності</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Рівень</th><th>Характеристика</th><th>Межі (від максимуму інструмента)</th></tr></thead>
+      <tbody>
+        <tr><td><b>Низький</b> (репродуктивний)</td><td>Фрагментарні уявлення про VR; дії лише за зразком; рефлексія відсутня або формальна</td><td>до 60 %</td></tr>
+        <tr><td><b>Середній</b> (конструктивний)</td><td>Системні знання; здатність адаптувати готові VR-рішення до уроку словесності</td><td>61–85 %</td></tr>
+        <tr><td><b>Високий</b> (творчий)</td><td>Самостійне проєктування VR-епізодів, критична експертиза, обґрунтована відмова від VR за недоцільності</td><td>86–100 %</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= DIAGNOSTICS ================= -->
+<section class="page" id="page-diag">
+  <div class="eyebrow">Діагностичний інструментарій</div>
+  <h2>Виміряйте свою готовність</h2>
+  <p class="instr-note">Інтерактивні версії інструментів констатувального та контрольного зрізів. Результати обчислюються миттєво й нікуди не передаються.</p>
+  <div class="diag-tabs" id="diagtabs">
+    <button class="active" data-i="a1">Анкета А-1 · мотивація</button>
+    <button data-i="t1">Тест Т-1 · знання</button>
+    <button data-i="e1">Картка Е-1 · проєкт</button>
+    <button data-i="s1">Шкала С-1 · рефлексія</button>
+  </div>
+
+  <div class="instrument visible" id="instr-a1">
+    <h3>Анкета А-1 «Мотиваційно-ціннісне ставлення до застосування VR»</h3>
+    <p class="instr-note">Оцініть кожне твердження: 1 — цілком не згоден/на … 5 — цілком згоден/на.</p>
+    <div id="a1items"></div>
+    <button class="btn primary" onclick="scoreLikert('a1',15,[44,63],'Мотиваційний критерій')">Обчислити результат</button>
+    <div class="result" id="a1result" role="status"></div>
+  </div>
+
+  <div class="instrument" id="instr-t1">
+    <h3>Тест Т-1 «Знання основ застосування VR у навчанні української мови та літератури»</h3>
+    <p class="instr-note">Демоверсія: 12 завдань із 24 (по 3 на кожен змістовий блок). Оберіть одну відповідь у кожному завданні.</p>
+    <div id="t1items"></div>
+    <button class="btn primary" onclick="scoreTest()">Перевірити відповіді</button>
+    <div class="result" id="t1result" role="status"></div>
+  </div>
+
+  <div class="instrument" id="instr-e1">
+    <h3>Експертна картка Е-1 «Оцінювання VR-проєкту та мікровикладання»</h3>
+    <p class="instr-note">Кожен параметр оцінюється трьома експертами (викладач + 2 студенти-рецензенти) за шкалою 0–3: 0 — відсутній · 1 — фрагментарно · 2 — достатньо · 3 — повно, творчо. Максимум — 36 балів. Низький: 0–21 · середній: 22–30 · високий: 31–36.</p>
+    <div class="tablewrap"><table class="rubric">
+      <thead><tr><th>Код</th><th>Параметр оцінювання</th></tr></thead>
+      <tbody>
+        <tr><td colspan="2" style="font-family:var(--font-ui);font-size:12px;letter-spacing:.1em;color:var(--violet-deep);background:var(--paper)">БЛОК А · ТЕХНОЛОГІЧНА КАРТА УРОКУ (макс. 12)</td></tr>
+        <tr><td>А1</td><td>Відповідність VR-епізоду меті й очікуваним результатам уроку</td></tr>
+        <tr><td>А2</td><td>Реалізація дидактичного циклу «інструктаж — занурення — рефлексія»</td></tr>
+        <tr><td>А3</td><td>Обґрунтованість вибору технології: чому саме VR, а не інший засіб</td></tr>
+        <tr><td>А4</td><td>Урахування віку, безпеки та альтернатив для учнів без доступу до гарнітур</td></tr>
+        <tr><td colspan="2" style="font-family:var(--font-ui);font-size:12px;letter-spacing:.1em;color:var(--violet-deep);background:var(--paper)">БЛОК Б · ЯКІСТЬ VR-ПРОДУКТУ (макс. 12)</td></tr>
+        <tr><td>Б1</td><td>Змістова коректність літературного / мовного матеріалу</td></tr>
+        <tr><td>Б2</td><td>Технічна якість і працездатність продукту</td></tr>
+        <tr><td>Б3</td><td>Інтерактивність та імерсивний потенціал</td></tr>
+        <tr><td>Б4</td><td>Оригінальність, творчий підхід</td></tr>
+        <tr><td colspan="2" style="font-family:var(--font-ui);font-size:12px;letter-spacing:.1em;color:var(--violet-deep);background:var(--paper)">БЛОК В · МІКРОВИКЛАДАННЯ (макс. 12)</td></tr>
+        <tr><td>В1</td><td>Якість інструктажу та організації занурення</td></tr>
+        <tr><td>В2</td><td>Управління діяльністю «учнів» під час VR-епізоду</td></tr>
+        <tr><td>В3</td><td>Організація післяімерсивної рефлексії</td></tr>
+        <tr><td>В4</td><td>Мовлення, педагогічна взаємодія, реагування на ситуації</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="instrument" id="instr-s1">
+    <h3>Шкала С-1 «Самооцінка рефлексійної готовності»</h3>
+    <p class="instr-note">Оцініть кожне твердження: 1 — зовсім не про мене … 5 — повністю про мене.</p>
+    <div id="s1items"></div>
+    <button class="btn primary" onclick="scoreLikert('s1',10,[29,42],'Оцінно-рефлексійний критерій')">Обчислити результат</button>
+    <div class="result" id="s1result" role="status"></div>
+  </div>
+</section>
+
+<!-- ================= EXPERIMENT ================= -->
+<section class="page" id="page-exp">
+  <div class="eyebrow">Підрозділ 3.1 · організація дослідження</div>
+  <h2>Три етапи експерименту</h2>
+  <div class="stages">
+    <div class="stage" data-n="І"><b>Констатувальний</b><p>Вхідна діагностика (А-1, Т-1, С-1) у контрольній та експериментальній групах. Доведення статистичної однорідності: χ²емп &lt; 5,991 при p = 0,05.</p></div>
+    <div class="stage" data-n="ІІ"><b>Формувальний</b><p>Семестр роботи ЕГ на платформі «VR-Словесник» за п'ятьма модулями — реалізація всіх чотирьох педагогічних умов. КГ навчається за традиційною програмою.</p></div>
+    <div class="stage" data-n="ІІІ"><b>Контрольний</b><p>Повторна діагностика тим самим інструментарієм; порівняння динаміки рівнів; перевірка значущості за критерієм χ² Пірсона (df = 2).</p></div>
+  </div>
+
+  <div class="timeline">
+    <h2>Календарний план</h2>
+    <div class="trow"><span>МІСЯЦІ 1–2</span><div>Розгортання Moodle-курсу, наповнення модулів 1–2; пілотування анкети й тесту на групі 10–15 осіб, корекція інструментарію.</div></div>
+    <div class="trow"><span>МІСЯЦЬ 3</span><div>Констатувальний зріз у КГ та ЕГ (рекомендована вибірка — по 50–60 осіб, спеціальність 014.01, 3–4 курси, два ЗВО).</div></div>
+    <div class="trow"><span>МІСЯЦІ 4–8</span><div>Формувальний етап: модулі 1–5, наскрізний проєкт із трьома контрольними точками, мікровикладання; фіксація цифрового сліду платформи.</div></div>
+    <div class="trow"><span>МІСЯЦЬ 9</span><div>Контрольний зріз, статистична обробка (χ² Пірсона; для залежних вибірок усередині ЕГ — критерій Вілкоксона).</div></div>
+    <div class="trow"><span>МІСЯЦІ 10–11</span><div>Опис результатів (підрозділ 3.3), формулювання висновків, підготовка довідок про впровадження.</div></div>
+  </div>
+
+  <h2 style="margin-top:50px">Що додатково посилює доказовість</h2>
+  <div class="threecol" style="margin-top:10px">
+    <div class="tile"><b>Апробація у школі</b><p>5–7 студентів ЕГ проводять власний VR-фрагмент під час педагогічної практики; відгуки вчителів-менторів — якісний матеріал дослідження.</p></div>
+    <div class="tile"><b>Цифровий слід</b><p>Завершеність модулів, час роботи, результати тренажерів — об'єктивне джерело даних на додачу до зрізів.</p></div>
+    <div class="tile"><b>Колективний продукт</b><p>«Банк VR-ресурсів словесника», створений учасниками, — аргумент практичної значущості дослідження.</p></div>
+  </div>
+</section>
+
+<!-- ================= RESOURCES ================= -->
+<section class="page" id="page-res">
+  <div class="eyebrow">Модуль 4 · VR-майстерня</div>
+  <h2>Теми проєктів і банк ресурсів</h2>
+  <p class="instr-note">Орієнтовна тематика наскрізних проєктів — під конкретні твори шкільної програми. Кожен проєкт проходить три контрольні точки: ідея → технологічна карта → продукт + мікровикладання.</p>
+  <div class="rgrid">
+    <div class="rcard"><small>Література · 7–10 клас</small><b>«Тіні забутих предків»: VR-мандрівка Карпатами</b><p>Віртуальний простір Івана та Марічки: полонини, звичаї, магія гір як контекст новели М. Коцюбинського.</p></div>
+    <div class="rcard"><small>Література · 8 клас</small><b>«Слово о полку Ігоревім»: імерсивна реконструкція</b><p>Похід Ігоря у 360°: маршрут, «золоте слово» Святослава, плач Ярославни у віртуальному Путивлі.</p></div>
+    <div class="rcard"><small>Література · 9 клас</small><b>«Петербург Шевченка» до вивчення «Сну»</b><p>Віртуальна екскурсія містом поеми: контраст імперської столиці й підневільної України.</p></div>
+    <div class="rcard"><small>Література · 10 клас</small><b>«Кайдашева сім'я»: подвір'я як простір конфлікту</b><p>360°-панорама садиби Кайдашів з інтерактивними точками — репліками персонажів у місцях сварок.</p></div>
+    <div class="rcard"><small>Мова · тема «Діалектна лексика»</small><b>Мовний VR-квест «Подорож діалектами України»</b><p>Маршрут наріччями: завдання на впізнавання діалектизмів у віртуальних локаціях від Закарпаття до Слобожанщини.</p></div>
+    <div class="rcard"><small>Мова · 6 клас</small><b>AR-плакат «Частини мови оживають»</b><p>Доповнена реальність над звичайним плакатом: наведення камери запускає міні-пояснення й завдання.</p></div>
+  </div>
+
+  <h2 style="margin-top:50px">Інструменти майстерні</h2>
+  <div class="rgrid">
+    <div class="rcard"><small>Створення VR-сцен</small><b>CoSpaces Edu</b><p>Конструктор простих віртуальних світів без програмування; перегляд у Cardboard-режимі зі смартфона.</p></div>
+    <div class="rcard"><small>Інтерактивні панорами</small><b>ThingLink</b><p>Додавання інтерактивних точок до зображень і 360°-панорам: текст, аудіо, запитання.</p></div>
+    <div class="rcard"><small>Готовий контент</small><b>360°-відео та віртуальні музеї</b><p>Тури музеями Т. Шевченка, Лесі Українки (Колодяжне), Львовом І. Франка; добірка з анотаціями студентів.</p></div>
+    <div class="rcard"><small>Обладнання</small><b>Cardboard + смартфон</b><p>Мінімальний імерсивний комплект для школи; чек-лист безпеки VR-уроку — у модулі 2.</p></div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="fwrap">
+    <span>VR-СЛОВЕСНИК · прототип платформи до дисертаційного дослідження</span>
+    <span>МОДУЛІ · МАТРИЦЯ · ДІАГНОСТИКА · ЕКСПЕРИМЕНТ</span>
+  </div>
+</footer>
+
+<script>
+/* ---------- navigation ---------- */
+function go(p){
+  document.querySelectorAll('section.page').forEach(s=>s.classList.remove('visible'));
+  document.getElementById('page-'+p).classList.add('visible');
+  document.querySelectorAll('#mainnav button').forEach(b=>b.classList.toggle('active',b.dataset.p===p));
+  window.scrollTo({top:0});
+}
+document.querySelectorAll('#mainnav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.p)));
+
+/* ---------- portal tilt ---------- */
+const portal=document.getElementById('portal');
+const motionOK=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(portal&&motionOK){
+  portal.addEventListener('mousemove',e=>{
+    const r=portal.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5;
+    portal.style.transform=`rotateY(${x*10}deg) rotateX(${-y*8}deg)`;
+  });
+  portal.addEventListener('mouseleave',()=>portal.style.transform='');
+}
+
+/* ---------- modules data ---------- */
+const modules=[
+ {n:'МОДУЛЬ 1',c:'М',t:'Навіщо словеснику віртуальна реальність?',w:'Тижні 1–2 · мотиваційний · компонент М',
+  topics:['Покоління Z/Alpha і криза читання: чому традиційних засобів недостатньо','Імерсія як педагогічний феномен: «ефект присутності» у художньому світі твору','Світовий та американський досвід: VR на уроках English Language Arts','Український контекст: віртуальні музеї письменників, 360°-тури літературними місцями'],
+  tasks:[['З-1.1','Пройти два віртуальні тури й написати есе-рефлексію (300 слів): «Що я відчув(ла) і що відчує мій учень?»'],['З-1.2','Форум-дискусія «VR на уроці літератури — збагачення чи підміна читання?» — щонайменше 2 аргументовані дописи']],
+  ctrl:'Есе + активність у форумі · вхідне анкетування А-1'},
+ {n:'МОДУЛЬ 2',c:'К',t:'Основи імерсивних технологій',w:'Тижні 3–5 · теоретико-технологічний · компонент К',
+  topics:['Поняттєвий апарат: VR, AR, MR, XR, 360°-контент; ступені імерсивності','Апаратне забезпечення: від Cardboard до автономних гарнітур; бюджетні рішення для школи','Психолого-педагогічні засади: модель CAMIL, когнітивне навантаження, висновки експериментів Паронг і Майєра','Безпека і здоров\u2019я: вікові обмеження, тривалість сеансів, кіберхвороба; захист даних учнів','Огляд освітніх VR/AR-ресурсів для словесника'],
+  tasks:[['З-2.1','Порівняльна таблиця трьох VR/AR-ресурсів: зміст, доступність, мова, вік, дидактичний потенціал'],['З-2.2','Пам\u2019ятка з безпеки VR для учнів 7 класу (творчий формат)']],
+  ctrl:'Проміжний тест — 20 питань, автоматична перевірка'},
+ {n:'МОДУЛЬ 3',c:'К',t:'Методика VR-уроку української мови та літератури',w:'Тижні 6–8 · методичний · компонент К',
+  topics:['Модель TPACK для словесника: технологія × методика × предметний зміст','Дидактичний цикл «інструктаж — занурення — рефлексія»','VR на уроці літератури: віртуальні екскурсії, реконструкція художнього простору, «прогулянка» текстом','VR/AR на уроці мови: імерсивні квести, доповнена реальність, віртуальні комунікативні ситуації','Критерії дидактичної доцільності: коли VR не потрібна','Оцінювання результатів навчання після імерсивного досвіду'],
+  tasks:[['З-3.1','Аналіз модельного VR-фрагмента за схемою TPACK: що дає технологія, чого не дав би підручник?'],['З-3.2','Кейс: із трьох тем обрати ту, де VR доцільна, й обґрунтувати відмову для двох інших']],
+  ctrl:'Аналітична робота + кейс · тест Т-1 (частина 2)'},
+ {n:'МОДУЛЬ 4',c:'Д',t:'VR-майстерня: від ідеї до уроку',w:'Тижні 9–13 · проєктно-діяльнісний · компонент Д',
+  topics:['Добір і адаптація готового контенту: 360°-відео й тури під навчальну мету','Створення власного контенту: ThingLink, CoSpaces Edu, знімання 360°-фото','Розроблення технологічної карти уроку з VR-епізодом','Мікровикладання: 10–15-хвилинний фрагмент уроку для одногрупників'],
+  tasks:[['ПРОЄКТ','Наскрізний проєкт (індивідуально або в парі) з трьома контрольними точками: ідея → технологічна карта → продукт + мікровикладання. Теми — у розділі «Ресурси»']],
+  ctrl:'Захист проєкту · експертна картка Е-1 (викладач + 2 рецензенти) · відеозапис мікровикладання'},
+ {n:'МОДУЛЬ 5',c:'Р',t:'Рефлексія та експертиза',w:'Тижні 14–15 + наскрізно · рефлексійно-оцінювальний · компонент Р',
+  topics:['Взаємоекспертиза: кожен студент рецензує 2 проєкти за карткою Е-1','Рефлексійний щоденник (приватний блог з опорними запитаннями після кожного модуля)','Підсумковий круглий стіл «Мій перший VR-урок: що вдалося, що зміню»','Самооцінка за шкалою С-1 + підсумковий тест Т-1 (контрольний зріз)'],
+  tasks:[['ПОРТФОЛІО','Есе, аналітичні роботи, технологічна карта, VR-продукт, відео мікровикладання, дві рецензії, щоденник'],['СПІЛЬНЕ','Поповнення колективного «Банку VR-ресурсів словесника»']],
+  ctrl:'Портфоліо · контрольний зріз усім інструментарієм'}
+];
+const modlist=document.getElementById('modlist');
+modules.forEach((m,i)=>{
+  const d=document.createElement('div');d.className='module';d.dataset.c=m.c;
+  d.innerHTML=`<button class="acc-head" aria-expanded="false">
+      <span class="mnum">${m.n}</span>
+      <span class="mtitle"><b>${m.t}</b><small>${m.w}</small></span>
+      <span class="chev">›</span></button>
+    <div class="acc-body">
+      <h4>Теми</h4><ul>${m.topics.map(t=>`<li>${t}</li>`).join('')}</ul>
+      <h4>Завдання</h4>${m.tasks.map(t=>`<div class="task"><code>${t[0]}</code>${t[1]}</div>`).join('')}
+      <h4>Контроль</h4><p style="font-size:15px">${m.ctrl}</p>
+    </div>`;
+  d.querySelector('.acc-head').addEventListener('click',()=>{
+    const open=d.classList.toggle('open');
+    d.querySelector('.acc-head').setAttribute('aria-expanded',open);
+  });
+  if(i===0){d.classList.add('open');d.querySelector('.acc-head').setAttribute('aria-expanded',true);}
+  modlist.appendChild(d);
+});
+
+/* ---------- diagnostics tabs ---------- */
+document.querySelectorAll('#diagtabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#diagtabs button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.querySelectorAll('.instrument').forEach(x=>x.classList.remove('visible'));
+  document.getElementById('instr-'+b.dataset.i).classList.add('visible');
+}));
+
+/* ---------- likert builders ---------- */
+const a1=[
+'Мені цікаво дізнаватися про нові цифрові технології навчання.',
+'Технології віртуальної реальності здатні поглибити сприйняття художнього твору учнями.',
+'VR може допомогти учням «побувати» в часі і просторі літературного твору.',
+'Я хотів/ла б використовувати VR на власних уроках української мови та літератури.',
+'Витрати часу на підготовку VR-уроку виправдовуються його результатами.',
+'Імерсивні технології відповідають потребам сучасних школярів.',
+'Учитель-словесник має володіти цифровими інструментами не гірше за вчителя інформатики.',
+'Я готовий/ва самостійно опановувати нові VR-застосунки.',
+'VR-технології можуть підвищити інтерес учнів до читання, а не витіснити його.',
+'Використання VR на уроці мови (не лише літератури) є доцільним.',
+'Опанування VR-технологій — важлива складова моєї професійної підготовки.',
+'Мене приваблює можливість самому/самій створювати віртуальні освітні продукти.',
+'Я обговорюю нові освітні технології з одногрупниками чи колегами.',
+'Труднощі технічного характеру не зупинять мене у використанні VR.',
+'Застосування VR підвищить мою конкурентоспроможність як учителя.'];
+const s1=[
+'Я можу пояснити, чому в конкретній темі VR доцільна або недоцільна.',
+'Я здатен/на виявити недоліки власного VR-уроку після його проведення.',
+'Я можу оцінити VR-урок колеги за чіткими критеріями.',
+'Я розумію ризики VR для здоров\u2019я та даних учнів і вмію їх мінімізувати.',
+'Я аналізую, чи досягнуто навчальну мету, а не лише чи сподобалось учням.',
+'Я коригую методичні рішення на основі аналізу попереднього досвіду.',
+'Я можу аргументовано відмовитися від VR на користь простішого засобу.',
+'Я усвідомлюю межі власної технологічної компетентності та шляхи її розвитку.',
+'Я вмію збирати зворотний зв\u2019язок від учнів після імерсивного досвіду.',
+'Я сприймаю критику своїх розробок конструктивно.'];
+function buildLikert(id,items){
+  const box=document.getElementById(id+'items');
+  items.forEach((q,i)=>{
+    const d=document.createElement('div');d.className='qitem';
+    d.innerHTML=`<p><span class="qnum">${String(i+1).padStart(2,'0')}</span>${q}</p>
+      <div class="likert">${[1,2,3,4,5].map(v=>`<label><input type="radio" name="${id}q${i}" value="${v}"><span>${v}</span></label>`).join('')}</div>`;
+    box.appendChild(d);
+  });
+}
+buildLikert('a1',a1);buildLikert('s1',s1);
+
+function scoreLikert(id,n,bounds,label){
+  let sum=0,answered=0;
+  for(let i=0;i<n;i++){const c=document.querySelector(`input[name="${id}q${i}"]:checked`);if(c){sum+=+c.value;answered++;}}
+  const r=document.getElementById(id+'result');
+  r.classList.add('visible');
+  if(answered<n){r.className='result visible mid';r.innerHTML=`<b>Заповнено ${answered} із ${n}</b>Дайте відповідь на всі твердження, щоб обчислити рівень.`;return;}
+  const max=n*5,pct=Math.round(sum/max*100);
+  let lvl,cls;
+  if(sum<=bounds[0]){lvl='Низький (репродуктивний)';cls='low';}
+  else if(sum<=bounds[1]){lvl='Середній (конструктивний)';cls='mid';}
+  else{lvl='Високий (творчий)';cls='high';}
+  r.className='result visible '+cls;
+  r.innerHTML=`<b>${sum} із ${max} балів (${pct}%) · рівень: ${lvl}</b>${label}. Результат фіксується у зведеній відомості констатувального / контрольного зрізу.`;
+}
+
+/* ---------- test T-1 ---------- */
+const t1=[
+ {b:'Блок 1 · Поняттєвий апарат',q:'Технологія, що повністю замінює сенсорне оточення користувача синтезованим середовищем, — це:',o:['доповнена реальність','віртуальна реальність','змішана реальність','360°-відео'],a:1},
+ {q:'Накладання цифрових об\u2019єктів на реальне середовище в режимі реального часу характеризує:',o:['VR','AR','3D-моделювання','гейміфікацію'],a:1},
+ {q:'«Ефект присутності» (presence) — це:',o:['технічна характеристика гарнітури','суб\u2019єктивне відчуття перебування у віртуальному середовищі','синонім інтерактивності','метод оцінювання'],a:1},
+ {b:'Блок 2 · Психолого-педагогічні засади',q:'Згідно з експериментами Дж. Паронг і Р. Майєра, імерсивна VR без додаткових навчальних стратегій:',o:['завжди покращує результати','може знижувати результати через когнітивне перевантаження','не впливає на результати','покращує лише запам\u2019ятовування'],a:1},
+ {q:'Модель CAMIL описує:',o:['будову VR-гарнітури','механізми впливу імерсії на навчання через інтерес, мотивацію й когнітивне навантаження','етапи створення 360°-відео','структуру уроку'],a:1},
+ {q:'Найважливіший етап VR-уроку для консолідації знань:',o:['добір гарнітури','саме занурення','післяімерсивна рефлексія','технічне налаштування'],a:2},
+ {b:'Блок 3 · Методика VR-уроку словесності',q:'Модель TPACK передбачає інтеграцію:',o:['теорії, практики, контролю','технологічних, педагогічних і предметних знань','трьох рівнів імерсії','мотивації, знань, умінь'],a:1},
+ {q:'VR-епізод на уроці літератури дидактично доцільний, якщо:',o:['в школі є гарнітури','він забезпечує досвід, недосяжний іншими засобами, і працює на мету уроку','учні просять розваги','тема складна'],a:1},
+ {q:'Оптимальна тривалість безперервного VR-сеансу для учнів середньої школи:',o:['до 5–15 хв','30–40 хв','цілий урок','не регламентується'],a:0},
+ {b:'Блок 4 · Безпека, здоров\u2019я, дані',q:'Симптоми кіберхвороби (cybersickness):',o:['підвищення уваги','запаморочення, нудота, дезорієнтація','сонливість наступного дня','погіршення слуху'],a:1},
+ {q:'Перед VR-активністю вчитель обов\u2019язково:',o:['вимикає світло','проводить інструктаж із безпеки й визначає учнів із протипоказаннями','збирає смартфони','ставить оцінки'],a:1},
+ {q:'Дані, які можуть збирати VR-системи і які потребують захисту:',o:['лише оцінки','рухи, напрям погляду, поведінкові патерни учня','жодних','лише логіни'],a:1}
+];
+const t1box=document.getElementById('t1items');
+t1.forEach((item,i)=>{
+  if(item.b){const h=document.createElement('h4');h.style.cssText='font-family:var(--font-ui);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--violet-deep);margin:26px 0 8px';h.textContent=item.b;t1box.appendChild(h);}
+  const d=document.createElement('div');d.className='qitem';
+  d.innerHTML=`<p><span class="qnum">${String(i+1).padStart(2,'0')}</span>${item.q}</p>
+    <div class="opts">${item.o.map((o,j)=>`<label data-q="${i}" data-o="${j}"><input type="radio" name="t1q${i}" value="${j}">${String.fromCharCode(1072+j)}) ${o}</label>`).join('')}</div>`;
+  t1box.appendChild(d);
+});
+function scoreTest(){
+  let score=0,answered=0;
+  document.querySelectorAll('#t1items label').forEach(l=>l.classList.remove('correct','wrong'));
+  t1.forEach((item,i)=>{
+    const c=document.querySelector(`input[name="t1q${i}"]:checked`);
+    if(!c)return;answered++;
+    const chosen=+c.value;
+    const lbl=document.querySelector(`#t1items label[data-q="${i}"][data-o="${chosen}"]`);
+    const corr=document.querySelector(`#t1items label[data-q="${i}"][data-o="${item.a}"]`);
+    if(chosen===item.a){score++;lbl.classList.add('correct');}
+    else{lbl.classList.add('wrong');corr.classList.add('correct');}
+  });
+  const r=document.getElementById('t1result');r.classList.add('visible');
+  if(answered<t1.length){r.className='result visible mid';r.innerHTML=`<b>Відповіді дано на ${answered} із ${t1.length} завдань</b>Завершіть тест, щоб побачити рівень.`;return;}
+  const pct=Math.round(score/t1.length*100);let lvl,cls;
+  if(pct<=60){lvl='Низький (репродуктивний)';cls='low';}
+  else if(pct<=85){lvl='Середній (конструктивний)';cls='mid';}
+  else{lvl='Високий (творчий)';cls='high';}
+  r.className='result visible '+cls;
+  r.innerHTML=`<b>${score} із ${t1.length} правильних (${pct}%) · рівень: ${lvl}</b>Знаннєвий критерій. Правильні відповіді підсвічено зеленим, помилкові — рожевим.`;
+}
+</script>
+</body>
+</html>
