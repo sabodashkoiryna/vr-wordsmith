@@ -27,7 +27,18 @@ function formatCell(v: unknown): string {
 
 function toFormValue(field: CrudField, v: unknown): string {
   if (field.type === 'stringArray') return Array.isArray(v) ? v.join('\n') : '';
-  if (field.type === 'json') return v == null ? '' : JSON.stringify(v, null, 2);
+  if (field.type === 'json') {
+    // a.json() зберігає значення як рядок із JSON — розпарсити для гарного вигляду в textarea
+    if (v == null) return '';
+    if (typeof v === 'string') {
+      try {
+        return JSON.stringify(JSON.parse(v), null, 2);
+      } catch {
+        return v;
+      }
+    }
+    return JSON.stringify(v, null, 2);
+  }
   return v == null ? '' : String(v);
 }
 
@@ -39,9 +50,10 @@ function fromFormValue(field: CrudField, raw: string): unknown {
       .map((s) => s.trim())
       .filter(Boolean);
   if (field.type === 'json') {
+    // a.json() очікує рядок із JSON, а не "сирий" об'єкт — валідуємо, але шлемо як текст
     if (!raw.trim()) return undefined;
     try {
-      return JSON.parse(raw);
+      return JSON.stringify(JSON.parse(raw));
     } catch {
       return raw;
     }

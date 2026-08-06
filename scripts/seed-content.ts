@@ -68,7 +68,7 @@ async function seedModule() {
       title: m.title,
       weeks: m.weeks,
       topics: m.topics,
-      tasks: m.tasks,
+      tasks: JSON.stringify(m.tasks), // a.json() зберігає рядок, не об'єкт
       controlNote: m.ctrl,
     } as never);
   }

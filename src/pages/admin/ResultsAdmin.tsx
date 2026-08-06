@@ -31,6 +31,18 @@ type SubmissionRow = {
   level?: string | null;
 };
 
+function parseScores(v: unknown): Record<string, number> {
+  // a.json() зберігає значення як рядок із JSON
+  if (typeof v === 'string') {
+    try {
+      return JSON.parse(v);
+    } catch {
+      return {};
+    }
+  }
+  return (v as Record<string, number>) ?? {};
+}
+
 function toCsv(rows: AttemptRow[]): string {
   const header = ['id', 'owner', 'instrumentCode', 'phase', 'score', 'maxScore', 'pct', 'level', 'submittedAt'];
   const lines = rows.map((r) =>
@@ -58,7 +70,7 @@ function ScoringForm({
   e1Blocks: RubricBlock[];
   onSaved: () => void;
 }) {
-  const initial = (submission.teacherScores as Record<string, number>) ?? {};
+  const initial = parseScores(submission.teacherScores);
   const [scores, setScores] = useState<Record<string, number>>(initial);
   const [comment, setComment] = useState(submission.teacherComment ?? '');
   const [saving, setSaving] = useState(false);
@@ -74,7 +86,7 @@ function ScoringForm({
       await unwrap(
         client.models.ProjectSubmission.update({
           id: submission.id,
-          teacherScores: scores,
+          teacherScores: JSON.stringify(scores), // a.json() зберігає рядок, не об'єкт
           teacherComment: comment,
           totalScore: total,
           level,

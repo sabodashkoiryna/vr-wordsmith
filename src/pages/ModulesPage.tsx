@@ -14,6 +14,19 @@ type ModuleItem = {
   controlNote?: string | null;
 };
 
+function parseTasks(tasks: unknown): { code: string; text: string }[] {
+  // a.json() зберігає значення як рядок із JSON
+  if (typeof tasks === 'string') {
+    try {
+      const parsed = JSON.parse(tasks);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return Array.isArray(tasks) ? (tasks as { code: string; text: string }[]) : [];
+}
+
 const CHIP_CLASS: Record<string, string> = { М: 'm', К: 'k', Д: 'd', Р: 'r' };
 const COMPONENT_LABEL: Record<string, string> = {
   М: 'мотиваційний',
@@ -23,7 +36,7 @@ const COMPONENT_LABEL: Record<string, string> = {
 };
 
 function ModuleAccordionItem({ m, open, onToggle }: { m: ModuleItem; open: boolean; onToggle: () => void }) {
-  const tasks = (Array.isArray(m.tasks) ? m.tasks : []) as { code: string; text: string }[];
+  const tasks = parseTasks(m.tasks);
   const topics = (m.topics ?? []).filter(Boolean) as string[];
 
   return (
