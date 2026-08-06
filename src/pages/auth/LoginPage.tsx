@@ -44,7 +44,6 @@ export default function LoginPage() {
         <button className="btn primary" type="submit" disabled={busy}>
           {busy ? 'Входимо…' : 'Увійти'}
         </button>
-        <p className="hint">Бекенд ще не розгорнуто в AWS — вхід поки не спрацює. Дані з'являться після деплою.</p>
       </form>
     </section>
   );
