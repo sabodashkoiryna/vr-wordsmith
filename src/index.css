@@ -22,14 +22,18 @@ a{color:inherit}
 
 /* ---------- header ---------- */
 header{position:sticky;top:0;z-index:50;background:rgba(247,246,252,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--mist)}
-.hwrap{max-width:1160px;margin:0 auto;display:flex;align-items:center;gap:28px;padding:14px 24px}
+.hwrap{max-width:1160px;margin:0 auto;display:flex;align-items:center;gap:20px;padding:14px 24px;flex-wrap:wrap}
 .logo{font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:.02em;color:var(--ink);text-decoration:none;white-space:nowrap}
 .logo em{font-style:normal;color:var(--violet)}
 nav{display:flex;gap:4px;flex-wrap:wrap}
-nav a{font-family:var(--font-ui);font-size:12.5px;letter-spacing:.04em;border:none;background:none;color:var(--ink-soft);padding:8px 12px;border-radius:999px;cursor:pointer;text-decoration:none}
-nav a:hover{background:var(--mist)}
+.nav-auth{margin-left:auto}
+nav a,nav button{font-family:var(--font-ui);font-size:12.5px;letter-spacing:.04em;border:none;background:none;color:var(--ink-soft);padding:8px 12px;border-radius:999px;cursor:pointer;text-decoration:none}
+nav a:hover,nav button:hover{background:var(--mist)}
 nav a.active{background:var(--ink);color:#fff}
-nav a:focus-visible,.btn:focus-visible,.acc-head:focus-visible,input:focus-visible+span{outline:3px solid var(--violet);outline-offset:2px}
+nav a:focus-visible,nav button:focus-visible,.btn:focus-visible,.acc-head:focus-visible,input:focus-visible+span{outline:3px solid var(--violet);outline-offset:2px}
+@media(max-width:640px){
+  .hwrap{gap:10px 16px}
+}
 
 main{max-width:1160px;margin:0 auto;padding:0 24px 90px}
 section.page{padding-top:44px;animation:rise .45s ease both}
@@ -180,4 +184,21 @@ footer{border-top:1px solid var(--mist);margin-top:40px}
   .threecol,.stages,.rgrid{grid-template-columns:1fr}
   .portal{max-width:420px;margin:0 auto}
   .trow{grid-template-columns:1fr}
+  .admin-shell{grid-template-columns:1fr;gap:20px}
+  .admin-nav{position:static;flex-direction:row;flex-wrap:wrap}
+  .admin-user{flex-basis:100%;margin-bottom:0}
+}
+
+@media(max-width:600px){
+  main{padding:0 16px 60px}
+  h1{font-size:clamp(26px,7vw,34px)}
+  .lead{font-size:16px}
+  .likert{gap:6px}
+  .likert label{font-size:10px}
+  .qitem p{font-size:14px}
+  .mtitle b{font-size:14.5px}
+  .acc-head{padding:14px 16px;gap:10px}
+  table{font-size:13px}
+  th,td{padding:9px 10px}
+  .authform{max-width:100%}
 }
