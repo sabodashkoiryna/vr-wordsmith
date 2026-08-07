@@ -5,6 +5,7 @@ import RequireAuth from './components/RequireAuth';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import LandingPage from './features/landing/LandingPage';
+import GalleryPage from './features/gallery/GalleryPage';
 import ModulesPage from './pages/ModulesPage';
 import MatrixPage from './pages/MatrixPage';
 import DiagnosticsPage from './pages/DiagnosticsPage';
@@ -30,6 +31,7 @@ export default function App() {
         <main>
           <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/gallery" element={<GalleryPage />} />
             <Route path="/modules" element={<ModulesPage />} />
             <Route path="/matrix" element={<MatrixPage />} />
             <Route

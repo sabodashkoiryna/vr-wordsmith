@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import AuthShell, { AuthLink } from '../../features/auth/AuthShell';
+import Field from '../../ui/Field';
+import Button from '../../ui/Button';
 
 export default function LoginPage() {
   const { signIn } = useAuth();
@@ -18,8 +21,8 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await signIn(email, password);
-      const from = (location.state as { from?: Location })?.from;
-      navigate(from ? `${from.pathname}` : '/admin', { replace: true });
+      const from = (location.state as { from?: { pathname?: string } })?.from;
+      navigate(from?.pathname ?? '/learn', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не вдалося увійти.');
     } finally {
@@ -28,26 +31,38 @@ export default function LoginPage() {
   }
 
   return (
-    <section className="page">
-      <div className="eyebrow">Вхід</div>
-      <h2>Вхід до акаунту</h2>
-      <form className="authform" onSubmit={handleSubmit}>
-        <label>
-          Email
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        </label>
-        <label>
-          Пароль
-          <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-        </label>
-        {error && <p className="error">{error}</p>}
-        <button className="btn primary" type="submit" disabled={busy}>
+    <AuthShell
+      eyebrow="Вхід"
+      title="З поверненням"
+      subtitle="Увійдіть, щоб продовжити навчання з того місця, де зупинились."
+      footer={
+        <>
+          Ще немає акаунту? <AuthLink to="/signup">Зареєструватися безкоштовно</AuthLink>
+        </>
+      }
+    >
+      <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+        <Field
+          label="EMAIL"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Field
+          label="ПАРОЛЬ"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={error}
+        />
+        <Button type="submit" size="lg" disabled={busy} className="mt-1 w-full">
           {busy ? 'Входимо…' : 'Увійти'}
-        </button>
-        <p className="hint">
-          Ще немає акаунту? <Link to="/signup">Зареєструватися</Link>
-        </p>
+        </Button>
       </form>
-    </section>
+    </AuthShell>
   );
 }
