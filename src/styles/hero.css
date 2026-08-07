@@ -1,0 +1,180 @@
+/* ============================================================================
+   Герой лендінгу: «портал» у художній світ твору.
+
+   Уся інтерактивність тримається на двох змінних, які пише
+   usePointerParallax: --px і --py в діапазоні -1..1. Кожен шар оголошує
+   власну --depth і зсувається на свою величину — саме різниця швидкостей
+   дає відчуття об'єму. JS не торкається жодного шару окремо: один rAF
+   оновлює дві змінні, решту рахує CSS на композиторі.
+
+   --parallax-strength дорівнює 0 під prefers-reduced-motion, тож усі calc()
+   схлопуються в нуль і портал просто стоїть.
+   ========================================================================= */
+
+@layer components {
+  .portal-stage {
+    --px: 0;
+    --py: 0;
+    --pointer-active: 0;
+    position: relative;
+    perspective: 1200px;
+    perspective-origin: 50% 45%;
+  }
+
+  /* Світіння-аврора ПОЗАДУ порталу — дає відчуття, що він підсвічений ззаду. */
+  .portal-glow {
+    position: absolute;
+    inset: -18% -12% -8%;
+    background: radial-gradient(50% 50% at 50% 45%, rgb(91 61 245 / 0.55), transparent 70%);
+    filter: blur(38px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .portal {
+    position: relative;
+    z-index: 1;
+    aspect-ratio: 4 / 4.4;
+    /* Органічна форма «краплі» — успадкована з PoC, найкраща знахідка прототипу. */
+    border-radius: 46% 46% 42% 42% / 34% 34% 60% 60%;
+    overflow: hidden;
+    background: var(--grad-horizon);
+    box-shadow:
+      0 40px 90px -30px rgb(59 34 184 / 0.65),
+      inset 0 0 0 1px rgb(255 255 255 / 0.14);
+    transform-style: preserve-3d;
+    transform: rotateY(calc(var(--px) * var(--parallax-strength) * 9deg))
+      rotateX(calc(var(--py) * var(--parallax-strength) * -7deg));
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+
+  /* Спільна поведінка шарів усередині: рух проти курсора, кожен на свою глибину. */
+  .portal-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    transform: translate3d(
+      calc(var(--px) * var(--depth, 0) * var(--parallax-strength) * -1px),
+      calc(var(--py) * var(--depth, 0) * var(--parallax-strength) * -1px),
+      0
+    );
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+
+  /* --- Зорі: три шари на різній глибині ---------------------------------- */
+  .portal-stars {
+    background-image:
+      radial-gradient(1.6px 1.6px at 20% 18%, #fff 60%, transparent 61%),
+      radial-gradient(1.1px 1.1px at 64% 10%, #fff 60%, transparent 61%),
+      radial-gradient(1.6px 1.6px at 82% 26%, #fff 60%, transparent 61%),
+      radial-gradient(1.1px 1.1px at 38% 30%, #fff 60%, transparent 61%),
+      radial-gradient(1.3px 1.3px at 50% 14%, #fff 60%, transparent 61%),
+      radial-gradient(1px 1px at 74% 20%, #fff 60%, transparent 61%);
+    opacity: 0.85;
+  }
+  .portal-stars-far {
+    --depth: 4;
+  }
+  .portal-stars-near {
+    --depth: 14;
+    background-image:
+      radial-gradient(2px 2px at 30% 22%, #cfe4ff 60%, transparent 61%),
+      radial-gradient(1.6px 1.6px at 88% 12%, #fff 60%, transparent 61%),
+      radial-gradient(1.8px 1.8px at 12% 34%, #e6d8ff 60%, transparent 61%);
+    opacity: 0.7;
+  }
+
+  /* --- Карпатські пасма: що ближче — то сильніше рухається ---------------- */
+  .ridge-l {
+    position: absolute;
+    left: -10%;
+    right: -10%;
+    height: 44%;
+    border-radius: 50% 50% 0 0;
+    pointer-events: none;
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+  .ridge-far {
+    --depth: 8;
+    bottom: 13%;
+    background: #41309a;
+    opacity: 0.85;
+    transform: translate3d(
+        calc(var(--px) * var(--depth) * var(--parallax-strength) * -1px),
+        calc(var(--py) * var(--depth) * var(--parallax-strength) * -0.4px),
+        0
+      )
+      scaleX(1.2);
+  }
+  .ridge-mid {
+    --depth: 16;
+    bottom: 2%;
+    background: #2a1c6e;
+    transform: translate3d(
+        calc(var(--px) * var(--depth) * var(--parallax-strength) * -1px),
+        calc(var(--py) * var(--depth) * var(--parallax-strength) * -0.4px),
+        0
+      )
+      scaleX(1.15);
+  }
+  .ridge-near {
+    --depth: 26;
+    bottom: -7%;
+    background: #170f3a;
+    transform: translate3d(
+      calc(var(--px) * var(--depth) * var(--parallax-strength) * -1px),
+      calc(var(--py) * var(--depth) * var(--parallax-strength) * -0.4px),
+      0
+    );
+  }
+
+  /* --- Цитата: найближчий шар, тож рухається найпомітніше ----------------- */
+  .portal-quote {
+    --depth: 34;
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 15%;
+    color: #fff;
+    text-shadow: 0 2px 22px rgb(23 15 58 / 0.75);
+    transform: translate3d(
+      calc(var(--px) * var(--depth) * var(--parallax-strength) * -1px),
+      calc(var(--py) * var(--depth) * var(--parallax-strength) * -1px),
+      0
+    );
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+  .portal-quote blockquote {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(15px, 1.7vw, 20px);
+    line-height: 1.5;
+  }
+  .portal-quote figcaption {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    margin-top: 14px;
+    opacity: 0.85;
+  }
+
+  /* --- Відблиск, що йде за курсором -------------------------------------- */
+  .portal-specular {
+    background: radial-gradient(
+      38% 34% at calc(50% + var(--px) * 42%) calc(42% + var(--py) * 38%),
+      rgb(255 255 255 / 0.22),
+      transparent 70%
+    );
+    mix-blend-mode: screen;
+    opacity: calc(0.35 + var(--pointer-active) * 0.5);
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+
+  /* Внутрішня віньєтка — тримає форму об'ємною. */
+  .portal-lens {
+    border-radius: inherit;
+    box-shadow:
+      inset 0 -34px 70px rgb(23 15 58 / 0.5),
+      inset 0 30px 60px rgb(255 255 255 / 0.1);
+  }
+}

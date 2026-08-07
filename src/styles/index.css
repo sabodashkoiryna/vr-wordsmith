@@ -21,5 +21,7 @@
 @import './fonts.css';
 @import './tokens.css';
 @import './base.css';
+@import './motion.css';
+@import './hero.css';
 @import './legacy.css' layer(legacy);
 @import './legacy-bridge.css';

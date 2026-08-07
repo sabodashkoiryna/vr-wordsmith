@@ -20,20 +20,8 @@ html{scroll-behavior:smooth}
 body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:17px;line-height:1.65}
 a{color:inherit}
 
-/* ---------- header ---------- */
-header{position:sticky;top:0;z-index:50;background:rgba(247,246,252,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--mist)}
-.hwrap{max-width:1160px;margin:0 auto;display:flex;align-items:center;gap:20px;padding:14px 24px;flex-wrap:wrap}
-.logo{font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:.02em;color:var(--ink);text-decoration:none;white-space:nowrap}
-.logo em{font-style:normal;color:var(--violet)}
-nav{display:flex;gap:4px;flex-wrap:wrap}
-.nav-auth{margin-left:auto}
-nav a,nav button{font-family:var(--font-ui);font-size:12.5px;letter-spacing:.04em;border:none;background:none;color:var(--ink-soft);padding:8px 12px;border-radius:999px;cursor:pointer;text-decoration:none}
-nav a:hover,nav button:hover{background:var(--mist)}
-nav a.active{background:var(--ink);color:#fff}
-nav a:focus-visible,nav button:focus-visible,.btn:focus-visible,.acc-head:focus-visible,input:focus-visible+span{outline:3px solid var(--violet);outline-offset:2px}
-@media(max-width:640px){
-  .hwrap{gap:10px 16px}
-}
+/* Шапку повністю перенесено в components/Header.tsx (утиліти + токени) —
+   стилі PoC для header/.hwrap/.logo/nav видалено. */
 
 main{max-width:1160px;margin:0 auto;padding:0 24px 90px}
 section.page{padding-top:44px;animation:rise .45s ease both}

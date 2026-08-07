@@ -1,0 +1,90 @@
+/* ============================================================================
+   Анімації. Жодної JS-бібліотеки: усе на transform/opacity, тобто на
+   композиторі — це важливо, бо чимало студентів заходитимуть зі середніх
+   Android-телефонів.
+
+   Тривалості беруться з токенів, тож prefers-reduced-motion (який обнуляє
+   ті токени) гасить анімацію одним місцем, не ламаючи слухачі подій.
+   ========================================================================= */
+
+@layer components {
+  /* --- Поява при скролі -------------------------------------------------- */
+  .reveal {
+    --reveal-delay: 0;
+    --reveal-shift: 26px;
+    opacity: 0;
+    transition:
+      opacity var(--dur-reveal) var(--ease-out),
+      transform var(--dur-reveal) var(--ease-out);
+    transition-delay: calc(var(--reveal-delay) * var(--stagger));
+    will-change: transform, opacity;
+  }
+  .reveal[data-reveal-dir='up'] {
+    transform: translate3d(0, var(--reveal-shift), 0);
+  }
+  .reveal[data-reveal-dir='down'] {
+    transform: translate3d(0, calc(var(--reveal-shift) * -1), 0);
+  }
+  .reveal[data-reveal-dir='left'] {
+    transform: translate3d(var(--reveal-shift), 0, 0);
+  }
+  .reveal[data-reveal-dir='right'] {
+    transform: translate3d(calc(var(--reveal-shift) * -1), 0, 0);
+  }
+  .reveal[data-reveal-dir='none'] {
+    transform: none;
+  }
+  .reveal[data-revealed='true'] {
+    opacity: 1;
+    transform: none;
+    /* Після появи знімаємо will-change: інакше десятки блоків назавжди
+       лишаються на власних шарах композитора і з'їдають пам'ять GPU. */
+    will-change: auto;
+  }
+
+  /* --- Повільний дрейф аврори на тлі ------------------------------------- */
+  @keyframes aurora-drift {
+    0%,
+    100% {
+      transform: translate3d(-4%, -2%, 0) scale(1.05);
+      opacity: 0.55;
+    }
+    50% {
+      transform: translate3d(4%, 3%, 0) scale(1.15);
+      opacity: 0.8;
+    }
+  }
+  .anim-aurora {
+    animation: aurora-drift 22s var(--ease-in-out) infinite;
+  }
+
+  /* --- Мерехтіння зір ---------------------------------------------------- */
+  @keyframes star-twinkle {
+    0%,
+    100% {
+      opacity: 0.35;
+    }
+    50% {
+      opacity: 0.9;
+    }
+  }
+  .anim-twinkle {
+    animation: star-twinkle 6s var(--ease-in-out) infinite;
+  }
+
+  /* --- Підказка «гортайте нижче» ----------------------------------------- */
+  @keyframes scroll-hint {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+      opacity: 0.5;
+    }
+    50% {
+      transform: translate3d(0, 7px, 0);
+      opacity: 1;
+    }
+  }
+  .anim-scroll-hint {
+    animation: scroll-hint 2.2s var(--ease-in-out) infinite;
+  }
+}

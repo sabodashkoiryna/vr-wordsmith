@@ -70,10 +70,18 @@
   border-color: var(--color-danger);
 }
 
-/* Липка шапка PoC мала захардкоджений світлий rgba. */
-header {
-  background: var(--glass-nav-bg);
-  border-bottom-color: var(--line);
+/* PoC тримав максимальну ширину на <main>. Лендінгу потрібні секції на всю
+   ширину (світіння, градієнтні смуги), тож обмеження переїжджає на
+   section.page — його використовують саме успадковані сторінки. */
+main {
+  max-width: none;
+  padding: 0;
+}
+section.page {
+  max-width: var(--width-content);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+  padding-bottom: 90px;
 }
 
 /* --- Усе, що в PoC використовувало --ink як ФОН ---------------------------

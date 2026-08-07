@@ -4,7 +4,7 @@ import RequireAdmin from './components/RequireAdmin';
 import RequireAuth from './components/RequireAuth';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import HomePage from './pages/HomePage';
+import LandingPage from './features/landing/LandingPage';
 import ModulesPage from './pages/ModulesPage';
 import MatrixPage from './pages/MatrixPage';
 import DiagnosticsPage from './pages/DiagnosticsPage';
@@ -29,7 +29,7 @@ export default function App() {
         <Header />
         <main>
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/modules" element={<ModulesPage />} />
             <Route path="/matrix" element={<MatrixPage />} />
             <Route
