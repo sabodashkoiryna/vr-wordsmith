@@ -1,0 +1,133 @@
+/* ============================================================================
+   ТИМЧАСОВИЙ місток PoC → MVP.
+
+   legacy.css лежить у шарі найнижчого пріоритету, тож достатньо перевизначити
+   його змінні тут (поза шарами — а незашарований CSS виграє в будь-якого
+   зашарованого), щоб УСІ старі екрани одразу стали темними, не торкаючись
+   жодного рядка їхньої розмітки.
+
+   Кілька значень у legacy.css захардкоджені хексами, а не змінними —
+   їх перекриваємо точково нижче.
+
+   Видаляється разом із legacy.css наприкінці рефакторингу адмінки.
+   ========================================================================= */
+
+:root {
+  /* Перемапування палітри PoC на темні відповідники */
+  --ink: var(--color-ink);
+  --ink-soft: var(--color-ink-soft);
+  --paper: var(--color-space-900);
+  --card: var(--color-space-800);
+  --mist: var(--color-space-600); /* у PoC це і межі, і фон ховера */
+  --violet: var(--color-violet-400); /* яскравіший — на темному тлі */
+  --violet-deep: var(--color-violet-300); /* у PoC вживається як колір ТЕКСТУ */
+  --teal: var(--color-success);
+  --amber: var(--color-warning);
+  --rose: var(--color-danger);
+}
+
+/* --- Захардкоджені світлі заливки з legacy.css ----------------------------- */
+
+/* Компонентні чипи М/К/Д/Р */
+.chip.m {
+  background: color-mix(in oklab, var(--color-chip-m) 16%, transparent);
+  color: var(--color-chip-m);
+}
+.chip.k {
+  background: color-mix(in oklab, var(--color-chip-k) 16%, transparent);
+  color: var(--color-chip-k);
+}
+.chip.d {
+  background: color-mix(in oklab, var(--color-chip-d) 18%, transparent);
+  color: var(--color-violet-300);
+}
+.chip.r {
+  background: color-mix(in oklab, var(--color-chip-r) 16%, transparent);
+  color: var(--color-chip-r);
+}
+
+/* Блоки результату діагностики */
+.result.low {
+  background: color-mix(in oklab, var(--color-danger) 14%, transparent);
+  color: var(--color-danger);
+}
+.result.mid {
+  background: color-mix(in oklab, var(--color-warning) 14%, transparent);
+  color: var(--color-warning);
+}
+.result.high {
+  background: color-mix(in oklab, var(--color-success) 14%, transparent);
+  color: var(--color-success);
+}
+
+/* Підсвітка правильних/хибних варіантів у тесті */
+.opts label.correct {
+  background: color-mix(in oklab, var(--color-success) 14%, transparent);
+  border-color: var(--color-success);
+}
+.opts label.wrong {
+  background: color-mix(in oklab, var(--color-danger) 14%, transparent);
+  border-color: var(--color-danger);
+}
+
+/* Липка шапка PoC мала захардкоджений світлий rgba. */
+header {
+  background: var(--glass-nav-bg);
+  border-bottom-color: var(--line);
+}
+
+/* --- Усе, що в PoC використовувало --ink як ФОН ---------------------------
+   У PoC --ink був майже чорним і слугував і кольором тексту, і заливкою
+   активних елементів. Після перемапування він став майже білим, тож кожна
+   така заливка перетворилася б на світлу пляму з білим текстом. Перекриваємо
+   їх усі акцентним фіолетовим. */
+.btn.primary {
+  background: var(--grad-aurora);
+  border-color: transparent;
+  color: #fff;
+}
+.btn.primary:hover {
+  filter: brightness(1.12);
+  background: var(--grad-aurora);
+}
+.btn {
+  border-color: var(--line-strong);
+  color: var(--color-ink);
+}
+.btn.ghost:hover {
+  background: var(--color-space-600);
+}
+
+nav a.active,
+.diag-tabs button.active,
+.admin-nav a.active,
+.tag-tabs button.active {
+  background: var(--color-violet-500);
+  border-color: var(--color-violet-500);
+  color: #fff;
+}
+
+/* Неактивні таби/кнопки-пігулки на темному */
+.diag-tabs button,
+.tag-tabs button {
+  background: var(--color-space-700);
+  border-color: var(--line);
+  color: var(--color-ink-soft);
+}
+
+/* Поля вводу: у PoC фон брався з --paper (тепер темний) — цього досить,
+   але текст успадковував колір body, тож задаємо явно. */
+.authform input,
+.admin-crud-form input,
+.admin-crud-form textarea,
+.admin-crud-form select,
+table input,
+table select {
+  color: var(--color-ink);
+  border-color: var(--line);
+}
+
+/* Заголовки таблиць у PoC мали світлий фон --paper. */
+th {
+  background: var(--color-space-700);
+}

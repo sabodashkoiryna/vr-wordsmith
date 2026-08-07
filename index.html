@@ -4,8 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <meta name="theme-color" content="#0A0818" />
+
+    <!-- Шрифти self-hosted (див. scripts/fetch-fonts.mjs) — жодного
+         рендер-блокуючого запиту на fonts.googleapis.com. Преловантажуємо
+         рівно два накреслення, потрібні над згином українською:
+         заголовок (Unbounded 800) і основний текст (Plex Sans 400). -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+          href="/fonts/unbounded-800-cyrillic.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+          href="/fonts/plex-sans-400-cyrillic.woff2" />
+
     <title>VR-Словесник — платформа підготовки майбутніх учителів</title>
   </head>
   <body>

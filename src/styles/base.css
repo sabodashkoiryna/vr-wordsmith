@@ -1,0 +1,135 @@
+/* ============================================================================
+   Базові стилі елементів. Тонкий шар: усе інше роблять утиліти й компоненти.
+   ========================================================================= */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* Плавний скрол не має ховати заголовок під липкою шапкою */
+    scroll-padding-top: 5rem;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--color-space-900);
+    color: var(--color-ink-soft);
+    /* Інтерфейс говорить сансом. Serif лишається ЛИШЕ для тексту уроку —
+       саме його присутність на всьому UI робила PoC «академічно-застарілим». */
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    letter-spacing: var(--tracking-display);
+    line-height: var(--leading-tight);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  /* Один фокус-обід на весь застосунок — ціановий, добре видимий на фіолетовому. */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--ring-focus);
+    border-radius: var(--radius-xs);
+  }
+
+  ::selection {
+    background: var(--color-violet-500);
+    color: #fff;
+  }
+
+  /* Зображення ніколи не розпирають контейнер і не дають CLS. */
+  img,
+  video,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  /* Тонкий темний скролбар, щоб світла смуга не різала темну сторінку. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-space-500) transparent;
+  }
+}
+
+@layer components {
+  /* --------------------------------------------------------------------------
+     Скло. Один рецепт — щоб непрозорий фолбек не забули ніде.
+     backdrop-filter подекуди вимкнений (економія батареї, старі движки), тож
+     спершу задаємо цілком читабельний непрозорий фон, і лише потім апгрейдимо.
+     -------------------------------------------------------------------------- */
+  .glass {
+    background: var(--color-space-700);
+    border: 1px solid var(--glass-1-border);
+  }
+  .glass-2 {
+    background: var(--color-space-600);
+    border: 1px solid var(--glass-2-border);
+  }
+
+  @supports (backdrop-filter: blur(1px)) {
+    .glass {
+      background: var(--glass-1-bg);
+      backdrop-filter: blur(var(--glass-1-blur)) saturate(140%);
+    }
+    .glass-2 {
+      background: var(--glass-2-bg);
+      backdrop-filter: blur(var(--glass-2-blur)) saturate(140%);
+    }
+  }
+
+  /* Градієнтний текст. Ніколи не несе інформації, якої немає в доступному імені. */
+  .text-gradient {
+    background: var(--grad-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  @media (forced-colors: active) {
+    .text-gradient {
+      -webkit-text-fill-color: currentColor;
+      color: currentColor;
+    }
+  }
+
+  /* Mono-надзаголовок — фірмова деталь PoC, лишається. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--color-violet-300);
+  }
+}
+
+@layer utilities {
+  /* Обгортка контенту зі сторонніми полями. */
+  .container-content {
+    width: 100%;
+    max-width: var(--width-content);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+  .container-wide {
+    width: 100%;
+    max-width: var(--width-wide);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+}
