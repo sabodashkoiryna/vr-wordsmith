@@ -3,13 +3,15 @@ import { manageAdmins } from '../functions/manage-admins/resource';
 
 /*
  * Схема відповідає моделі даних з архітектурного плану:
- * - контент (Module..EvidenceTile) керує група Admins, читають усі —
- *   і гості (allow.guest, IAM unauth role), і залогінені відвідувачі
- *   (allow.authenticated('identityPool'), IAM auth role) — публічні
- *   сторінки курсу видно як без логіну, так і з ним;
- * - DiagInstrument/DiagQuestion читають гості + залогінені через
- *   userPool (allow.authenticated() за замовчуванням), бо /diag уже
- *   захищено логіном — і за замовчуванням запит іде саме через userPool;
+ * - контент (Module..DiagQuestion) керує група Admins, читають усі —
+ *   гості через allow.guest() (IAM unauth-роль, режим identityPool),
+ *   а будь-який залогінений (включно з Admins) — через allow.authenticated()
+ *   (userPool, JWT). НЕ allow.authenticated('identityPool'): Cognito
+ *   Identity Pool мапить групу Admins на ОКРЕМУ IAM-роль (не "authenticated"),
+ *   якій Amplify не видає права на AppSync — тож identityPool-режим для
+ *   адмінів завжди падав би з Unauthorized. Тому фронтенд для контенту
+ *   передає authMode:'identityPool' лише для гостей (без сесії), а для
+ *   будь-кого залогіненого — звичний userPool-режим за замовчуванням.
  * - користувацькі дані (UserProfile..ProjectSubmission) — власник
  *   пише/читає свій запис, Admins читають (і, де потрібно, пишуть) усі.
  *
@@ -34,7 +36,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.guest().to(['read']),
-      allow.authenticated('identityPool').to(['read']),
+      allow.authenticated().to(['read']),
       allow.groups(['Admins']),
     ]),
 
@@ -49,7 +51,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.guest().to(['read']),
-      allow.authenticated('identityPool').to(['read']),
+      allow.authenticated().to(['read']),
       allow.groups(['Admins']),
     ]),
 
@@ -62,7 +64,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.guest().to(['read']),
-      allow.authenticated('identityPool').to(['read']),
+      allow.authenticated().to(['read']),
       allow.groups(['Admins']),
     ]),
 
@@ -76,7 +78,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.guest().to(['read']),
-      allow.authenticated('identityPool').to(['read']),
+      allow.authenticated().to(['read']),
       allow.groups(['Admins']),
     ]),
 
@@ -89,7 +91,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.guest().to(['read']),
-      allow.authenticated('identityPool').to(['read']),
+      allow.authenticated().to(['read']),
       allow.groups(['Admins']),
     ]),
 
@@ -101,7 +103,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.guest().to(['read']),
-      allow.authenticated('identityPool').to(['read']),
+      allow.authenticated().to(['read']),
       allow.groups(['Admins']),
     ]),
 
@@ -113,7 +115,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.guest().to(['read']),
-      allow.authenticated('identityPool').to(['read']),
+      allow.authenticated().to(['read']),
       allow.groups(['Admins']),
     ]),
 

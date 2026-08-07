@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { client } from '../lib/amplify-client';
 import { unwrap } from '../lib/unwrap';
+import { usePublicAuthMode } from '../lib/publicAuthMode';
 
 type Stage = { id: string; order: number; n: string; title: string; text: string };
 type Timeline = { id: string; order: number; period: string; text: string };
@@ -12,14 +13,16 @@ export default function ExperimentPage() {
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const authOpts = usePublicAuthMode();
 
   useEffect(() => {
+    if (authOpts === null) return;
     (async () => {
       try {
         const [s, t, e] = await Promise.all([
-          unwrap(client.models.ExperimentStage.list({ authMode: 'identityPool' })),
-          unwrap(client.models.TimelineEntry.list({ authMode: 'identityPool' })),
-          unwrap(client.models.EvidenceTile.list({ authMode: 'identityPool' })),
+          unwrap(client.models.ExperimentStage.list(authOpts)),
+          unwrap(client.models.TimelineEntry.list(authOpts)),
+          unwrap(client.models.EvidenceTile.list(authOpts)),
         ]);
         setStages([...s].sort((a, b) => a.order - b.order) as Stage[]);
         setTimeline([...t].sort((a, b) => a.order - b.order) as Timeline[]);
@@ -30,7 +33,7 @@ export default function ExperimentPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [authOpts]);
 
   return (
     <section className="page">

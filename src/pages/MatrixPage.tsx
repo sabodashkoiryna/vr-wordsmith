@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { client } from '../lib/amplify-client';
 import { unwrap } from '../lib/unwrap';
+import { usePublicAuthMode } from '../lib/publicAuthMode';
 
 type MatrixRow = {
   id: string;
@@ -25,13 +26,15 @@ export default function MatrixPage() {
   const [levels, setLevels] = useState<ReadinessLevel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const authOpts = usePublicAuthMode();
 
   useEffect(() => {
+    if (authOpts === null) return;
     (async () => {
       try {
         const [rowsData, levelsData] = await Promise.all([
-          unwrap(client.models.MatrixRow.list({ authMode: 'identityPool' })),
-          unwrap(client.models.ReadinessLevel.list({ authMode: 'identityPool' })),
+          unwrap(client.models.MatrixRow.list(authOpts)),
+          unwrap(client.models.ReadinessLevel.list(authOpts)),
         ]);
         setRows([...rowsData].sort((a, b) => a.order - b.order) as MatrixRow[]);
         setLevels([...levelsData].sort((a, b) => a.order - b.order) as ReadinessLevel[]);
@@ -41,7 +44,7 @@ export default function MatrixPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [authOpts]);
 
   return (
     <section className="page">

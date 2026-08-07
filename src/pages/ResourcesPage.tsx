@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { client } from '../lib/amplify-client';
 import { unwrap } from '../lib/unwrap';
+import { usePublicAuthMode } from '../lib/publicAuthMode';
 
 type ResourceItem = {
   id: string;
@@ -15,11 +16,13 @@ export default function ResourcesPage() {
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const authOpts = usePublicAuthMode();
 
   useEffect(() => {
+    if (authOpts === null) return;
     (async () => {
       try {
-        const data = await unwrap(client.models.Resource.list({ authMode: 'identityPool' }));
+        const data = await unwrap(client.models.Resource.list(authOpts));
         setResources([...data].sort((a, b) => a.order - b.order) as ResourceItem[]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Не вдалося завантажити ресурси.');
@@ -27,7 +30,7 @@ export default function ResourcesPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [authOpts]);
 
   const projects = resources.filter((r) => r.type === 'project');
   const tools = resources.filter((r) => r.type === 'tool');

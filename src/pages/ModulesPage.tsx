@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { client } from '../lib/amplify-client';
 import { unwrap } from '../lib/unwrap';
+import { usePublicAuthMode } from '../lib/publicAuthMode';
 
 type ModuleItem = {
   id: string;
@@ -75,11 +76,13 @@ export default function ModulesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openIndex, setOpenIndex] = useState(0);
+  const authOpts = usePublicAuthMode();
 
   useEffect(() => {
+    if (authOpts === null) return;
     (async () => {
       try {
-        const data = await unwrap(client.models.Module.list({ authMode: 'identityPool' }));
+        const data = await unwrap(client.models.Module.list(authOpts));
         setModules([...data].sort((a, b) => a.order - b.order) as ModuleItem[]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Не вдалося завантажити модулі.');
@@ -87,7 +90,7 @@ export default function ModulesPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [authOpts]);
 
   return (
     <section className="page">
