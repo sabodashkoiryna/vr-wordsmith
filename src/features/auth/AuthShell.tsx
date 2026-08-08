@@ -28,9 +28,11 @@ export default function AuthShell({
         style={{ background: 'var(--grad-glow-radial)' }}
       />
 
-      <div className="container-content relative grid items-center gap-16 py-16 lg:grid-cols-[1fr_minmax(380px,440px)] lg:py-24">
-        {/* Ліва колонка — цінність. На мобільному ховається, щоб форма була одразу. */}
-        <div className="hidden lg:block">
+      <div className="container-content relative grid items-start gap-16 py-16 lg:grid-cols-[1fr_minmax(380px,440px)] lg:py-24">
+        {/* Ліва колонка — цінність. На мобільному ховається, щоб форма була одразу.
+            pt-10 дорівнює внутрішньому відступу картки, тож надзаголовки обох
+            колонок стоять на одному рівні, а не «пливуть» по центру висоти. */}
+        <div className="hidden lg:block lg:pt-10">
           <p className="eyebrow mb-5">Безкоштовно · сертифікат</p>
           <h2 className="max-w-lg text-3xl">
             Від першого занурення — до <span className="text-gradient">власного VR-уроку</span>
