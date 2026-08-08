@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import RequireAdmin from './components/RequireAdmin';
 import RequireAuth from './components/RequireAuth';
 import Header from './components/Header';
+import ScrollToTop from './components/ScrollToTop';
 import Footer from './components/Footer';
 import LandingPage from './features/landing/LandingPage';
 import GalleryPage from './features/gallery/GalleryPage';
@@ -27,6 +28,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Header />
         <main>
           <Routes>

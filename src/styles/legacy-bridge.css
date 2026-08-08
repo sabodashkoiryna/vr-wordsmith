@@ -89,18 +89,21 @@ section.page {
    активних елементів. Після перемапування він став майже білим, тож кожна
    така заливка перетворилася б на світлу пляму з білим текстом. Перекриваємо
    їх усі акцентним фіолетовим. */
+/* Контур — внутрішньою тінню, а не рамкою: прозора рамка поверх градієнта
+   давала світлу облямівку по заокругленнях (див. коментар в ui/Button.tsx). */
+.btn {
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--line-strong);
+  color: var(--color-ink);
+}
 .btn.primary {
   background: var(--grad-aurora);
-  border-color: transparent;
+  box-shadow: none;
   color: #fff;
 }
 .btn.primary:hover {
   filter: brightness(1.12);
   background: var(--grad-aurora);
-}
-.btn {
-  border-color: var(--line-strong);
-  color: var(--color-ink);
 }
 .btn.ghost:hover {
   background: var(--color-space-600);

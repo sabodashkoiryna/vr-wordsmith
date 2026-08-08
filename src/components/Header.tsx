@@ -31,6 +31,14 @@ export default function Header() {
     navigate('/');
   }
 
+  /* Клік по посиланню сторінки, на якій уже перебуваєш, не змінює маршрут —
+     отже ScrollToTop не спрацює, і користувач лишається внизу. Піднімаємо вручну. */
+  function topIfSamePage(target: string) {
+    return () => {
+      if (pathname === target) window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  }
+
   return (
     <header
       className={`sticky top-0 z-[var(--z-header)] border-b transition-colors duration-[var(--dur-base)] ${
@@ -40,6 +48,7 @@ export default function Header() {
       <div className="container-content flex flex-wrap items-center gap-x-6 gap-y-3 py-3.5">
         <Link
           to="/"
+          onClick={topIfSamePage('/')}
           className="font-display text-[17px] font-extrabold tracking-[0.02em] whitespace-nowrap text-ink no-underline"
         >
           VR-<span className="text-violet-400">Словесник</span>
@@ -59,6 +68,7 @@ export default function Header() {
             : null}
           <NavLink
             to="/gallery"
+            onClick={topIfSamePage('/gallery')}
             className={({ isActive }) =>
               `rounded-full px-3 py-2 font-mono text-2xs tracking-[0.04em] no-underline transition-colors hover:bg-space-600 hover:text-ink ${
                 isActive ? 'bg-violet-500 text-white' : 'text-ink-soft'

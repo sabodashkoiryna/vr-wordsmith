@@ -249,7 +249,11 @@ function Lecturer() {
 
 function CertificateBand() {
   return (
-    <section id="certificate" className="relative overflow-hidden py-[var(--space-section)]">
+    <section
+      id="certificate"
+      data-anchor="band"
+      className="relative overflow-hidden py-[var(--space-section)]"
+    >
       <div
         aria-hidden="true"
         className="anim-aurora pointer-events-none absolute inset-0 opacity-40"
@@ -375,7 +379,7 @@ function FinalCta() {
               as={Link}
               to="/signup"
               size="lg"
-              className="border-2 border-white bg-white! text-[#1C1633]! hover:brightness-95"
+              className="bg-white! text-[#1C1633]! hover:brightness-95"
             >
               {finalCta.cta}
             </Button>
