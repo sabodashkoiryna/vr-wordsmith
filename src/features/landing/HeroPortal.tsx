@@ -1,4 +1,5 @@
 import { usePointerParallax } from '../../ui/motion/hooks';
+import PortalScene from './PortalScene';
 
 /**
  * «Портал» у художній світ твору — центральний візуальний образ лендінгу.
@@ -28,6 +29,8 @@ export default function HeroPortal({
         <div className="ridge-l ridge-far" />
         <div className="ridge-l ridge-mid" />
         <div className="ridge-l ridge-near" />
+
+        <PortalScene />
 
         <figure className="portal-quote">
           <blockquote>{quote}</blockquote>
