@@ -375,12 +375,7 @@ function FinalCta() {
           <h2 className="text-3xl text-white">{finalCta.title}</h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-white/85">{finalCta.text}</p>
           <div className="mt-9 flex justify-center">
-            <Button
-              as={Link}
-              to="/signup"
-              size="lg"
-              className="bg-white! text-[#1C1633]! hover:brightness-95"
-            >
+            <Button as={Link} to="/signup" size="lg" variant="onAccent">
               {finalCta.cta}
             </Button>
           </div>

@@ -62,6 +62,8 @@
   }
 
   /* --- Зорі: три шари на різній глибині ---------------------------------- */
+  /* Зорі розсипані лише по верхніх ~45% — нижче небо перекривають гребені.
+     Розміри й яскравість навмисно різні: рівні крапки читалися б як сітка. */
   .portal-stars {
     background-image:
       radial-gradient(1.6px 1.6px at 20% 18%, #fff 60%, transparent 61%),
@@ -69,18 +71,36 @@
       radial-gradient(1.6px 1.6px at 82% 26%, #fff 60%, transparent 61%),
       radial-gradient(1.1px 1.1px at 38% 30%, #fff 60%, transparent 61%),
       radial-gradient(1.3px 1.3px at 50% 14%, #fff 60%, transparent 61%),
-      radial-gradient(1px 1px at 74% 20%, #fff 60%, transparent 61%);
+      radial-gradient(1px 1px at 74% 20%, #fff 60%, transparent 61%),
+      radial-gradient(1.2px 1.2px at 9% 27%, #fff 60%, transparent 61%),
+      radial-gradient(0.9px 0.9px at 29% 8%, #fff 60%, transparent 61%),
+      radial-gradient(1.4px 1.4px at 45% 24%, #fff 60%, transparent 61%),
+      radial-gradient(0.9px 0.9px at 57% 33%, #fff 60%, transparent 61%),
+      radial-gradient(1.3px 1.3px at 68% 6%, #fff 60%, transparent 61%),
+      radial-gradient(1px 1px at 90% 17%, #fff 60%, transparent 61%),
+      radial-gradient(1.5px 1.5px at 15% 38%, #fff 60%, transparent 61%),
+      radial-gradient(0.9px 0.9px at 33% 41%, #fff 60%, transparent 61%),
+      radial-gradient(1.2px 1.2px at 78% 36%, #fff 60%, transparent 61%),
+      radial-gradient(1px 1px at 94% 31%, #fff 60%, transparent 61%),
+      radial-gradient(0.8px 0.8px at 5% 12%, #fff 60%, transparent 61%),
+      radial-gradient(1.1px 1.1px at 86% 42%, #fff 60%, transparent 61%);
     opacity: 0.85;
   }
   .portal-stars-far {
     --depth: 4;
   }
+  /* Ближчі зорі — трохи більші, з ледь помітним відтінком, рухаються сильніше. */
   .portal-stars-near {
     --depth: 14;
     background-image:
       radial-gradient(2px 2px at 30% 22%, #cfe4ff 60%, transparent 61%),
       radial-gradient(1.6px 1.6px at 88% 12%, #fff 60%, transparent 61%),
-      radial-gradient(1.8px 1.8px at 12% 34%, #e6d8ff 60%, transparent 61%);
+      radial-gradient(1.8px 1.8px at 12% 34%, #e6d8ff 60%, transparent 61%),
+      radial-gradient(2.2px 2.2px at 60% 19%, #fff 60%, transparent 61%),
+      radial-gradient(1.7px 1.7px at 42% 12%, #d8e8ff 60%, transparent 61%),
+      radial-gradient(1.9px 1.9px at 72% 29%, #fff 60%, transparent 61%),
+      radial-gradient(1.5px 1.5px at 23% 44%, #ffe9d0 60%, transparent 61%),
+      radial-gradient(1.6px 1.6px at 53% 40%, #fff 60%, transparent 61%);
     opacity: 0.7;
   }
 

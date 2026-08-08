@@ -1,6 +1,6 @@
 import type { ComponentPropsWithoutRef, ElementType, ReactNode } from 'react';
 
-type Variant = 'primary' | 'ghost' | 'subtle';
+type Variant = 'primary' | 'ghost' | 'subtle' | 'onAccent';
 type Size = 'sm' | 'md' | 'lg';
 
 /*
@@ -18,11 +18,14 @@ const base =
   'disabled:opacity-50 disabled:cursor-not-allowed';
 
 const variants: Record<Variant, string> = {
-  primary: 'text-white hover:brightness-115 active:scale-[0.98]',
+  primary: 'btn-aurora text-white hover:brightness-115 active:scale-[0.98]',
   ghost:
     'text-ink bg-transparent shadow-[inset_0_0_0_2px_var(--line-strong)] ' +
     'hover:bg-space-600 hover:shadow-[inset_0_0_0_2px_var(--line-glow)] active:scale-[0.98]',
   subtle: 'text-ink-soft bg-space-700 hover:bg-space-600',
+  // Для кнопки ПОВЕРХ яскравого градієнта: темна заливка контрастує з ним
+  // значно сильніше за світлу, бо смуга й так світла праворуч (ціан).
+  onAccent: 'bg-void text-ink hover:bg-space-800 active:scale-[0.98]',
 };
 
 const sizes: Record<Size, string> = {
@@ -47,11 +50,7 @@ export default function Button<T extends ElementType = 'button'>({
 } & Omit<ComponentPropsWithoutRef<T>, 'as' | 'children' | 'className'>) {
   const Tag = (as ?? 'button') as ElementType;
   return (
-    <Tag
-      className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
-      style={variant === 'primary' ? { background: 'var(--grad-aurora)' } : undefined}
-      {...rest}
-    >
+    <Tag className={`${base} ${variants[variant]} ${sizes[size]} ${className}`} {...rest}>
       {children}
     </Tag>
   );
