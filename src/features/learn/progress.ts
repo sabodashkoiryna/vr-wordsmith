@@ -12,8 +12,14 @@ import { unwrap } from '../../lib/unwrap';
  * тож list бачить лише власні записи, і повторний виклик оновлює наявний.
  */
 export async function markLessonComplete(studentId: string, lessonId: string, moduleId: string) {
+  // Через індекс, а не через list із фільтром: разом із фільтром `limit`
+  // обмежує кількість переглянутих рядків, тож малий ліміт дав би порожньо,
+  // і кожен виклик створював би ЩЕ ОДИН запис прогресу замість оновлення.
   const existing = await unwrap(
-    client.models.LessonProgress.list({ filter: { lessonId: { eq: lessonId } }, limit: 1 }),
+    client.models.LessonProgress.listLessonProgressByStudentIdAndLessonId({
+      studentId,
+      lessonId: { eq: lessonId },
+    }),
   );
   const payload = { status: 'completed' as const, completedAt: new Date().toISOString() };
   if (existing[0]) {

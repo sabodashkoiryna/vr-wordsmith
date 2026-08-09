@@ -74,8 +74,14 @@ export default function QuizRunner({
   const load = useCallback(async () => {
     try {
       setError(null);
+      // limit БЕЗ фільтра означав би «поверни N записів», але разом із
+      // фільтром він обмежує кількість ПЕРЕГЛЯНУТИХ рядків, і фільтр
+      // накладається вже на них. З `limit: 1` на таблиці з пʼятьма тестами
+      // це майже завжди порожня відповідь — саме через це тести не
+      // відкривалися взагалі. Індексу за lessonId у Quiz немає, тож беремо
+      // запас, якого вистачає на всю таблицю.
       const quizzes = await unwrap(
-        client.models.Quiz.list({ filter: { lessonId: { eq: lessonId } }, limit: 1 }),
+        client.models.Quiz.list({ filter: { lessonId: { eq: lessonId } }, limit: 200 }),
       );
       const q = quizzes[0];
       if (!q) {

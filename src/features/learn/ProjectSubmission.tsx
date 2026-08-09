@@ -63,10 +63,13 @@ export default function ProjectSubmission({
 
   const load = useCallback(async () => {
     try {
+      // Через індекс, а не list із фільтром: із фільтром `limit` обмежує
+      // кількість переглянутих рядків, і малий ліміт повернув би порожньо —
+      // тобто здача створювала б друге подання замість оновлення першого.
       const rows = await unwrap(
-        client.models.AssignmentSubmission.list({
-          filter: { assignmentId: { eq: assignmentId } },
-          limit: 1,
+        client.models.AssignmentSubmission.listAssignmentSubmissionByStudentIdAndAssignmentId({
+          studentId: userId ?? '',
+          assignmentId: { eq: assignmentId },
         }),
       );
       const row = rows[0];
@@ -91,7 +94,7 @@ export default function ProjectSubmission({
     } finally {
       setLoaded(true);
     }
-  }, [assignmentId]);
+  }, [assignmentId, userId]);
 
   useEffect(() => {
     void load();

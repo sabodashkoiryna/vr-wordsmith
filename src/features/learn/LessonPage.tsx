@@ -9,6 +9,7 @@ import { useCourseTree, type ModuleNode } from './useCourseTree';
 import { findLesson, flatten, KIND_LABEL, lessonHref } from './lessonMeta';
 import { READING_THEMES, useReadingTheme } from './readingTheme';
 import { markLessonComplete } from './progress';
+import { useAutoComplete } from './useAutoComplete';
 import LessonContent from './LessonContent';
 import QuizRunner from './QuizRunner';
 
@@ -118,6 +119,15 @@ export default function LessonPage() {
       setSaving(false);
     }
   }, [userId, found, reload]);
+
+  // Дійшов до кінця тексту — урок зараховано. Тести сюди не входять: вони
+  // зараховуються здачею, і зараховувати їх за прокрутку означало б
+  // позначати пройденим те, чого людина не робила.
+  const endSentinelRef = useAutoComplete(
+    lessonId,
+    !!found && !found.lesson.completed && found.lesson.kind !== 'quiz',
+    markComplete,
+  );
 
   if (error) {
     return (
@@ -249,6 +259,11 @@ export default function LessonPage() {
           )}
         </div>
 
+        {/* Маячок кінця тексту: щойно він у полі зору — урок зараховано.
+            Стоїть ПІСЛЯ колонки читання, тож дійти до нього, не проглянувши
+            текст, неможливо. */}
+        <div ref={endSentinelRef} aria-hidden="true" className="h-px" />
+
         {lesson.kind === 'quiz' && (
           <div className="mt-7">
             <QuizRunner lessonId={lesson.id} moduleId={module.id} onCompleted={reload} />
@@ -266,10 +281,14 @@ export default function LessonPage() {
             <span />
           )}
 
+          {/* Кнопка лишається як запасний шлях: для тестів, де прокрутка
+              нічого не зараховує, і для випадків, коли автоматичне
+              зарахування не спрацювало. Для звичайної лекції людина сюди
+              долистає вже з позначкою. */}
           {lesson.completed ? (
             <span className="font-mono text-2xs text-success">✓ Урок пройдено</span>
           ) : (
-            <Button onClick={markComplete} disabled={saving}>
+            <Button onClick={markComplete} disabled={saving} variant="ghost">
               {saving ? 'Зберігаємо…' : 'Позначити пройденим'}
             </Button>
           )}
