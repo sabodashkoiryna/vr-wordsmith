@@ -166,7 +166,21 @@ aws cognito-idp admin-set-user-password --user-pool-id us-east-1_vyZTt69y0 --use
     `aws amplify get-app --app-id d1fmnqsgshywg2 --query "app.customRules"`.
     Копія — `docs/amplify-custom-rules.json`.
 
-14. **Зняття ролі `Admins` незворотне з продукту.** Повернути її може лише той,
+14. **Сід іде ПІСЛЯ деплою схеми, не паралельно.** Сід пише через AppSync, тож
+    бачить ту схему, яка вже розгорнута. Додав поле в `data/resource.ts` —
+    дочекайся, поки job Amplify стане `SUCCEED`, і лише тоді запускай сід,
+    інакше отримаєш `The variables input contains a field that is not defined
+    for input object type 'CreateXInput'`. Помилка називає поле, а не причину.
+    Перевірити, що поле справді доїхало:
+
+    ```powershell
+    aws appsync get-type --api-id oakjllt4zzhfpltkz2vch2224y --type-name QuizQuestion --format SDL --region us-east-1 --query "type.definition"
+    ```
+
+    Впав посеред роботи — не страшно: сід ідемпотентний, звіряється за
+    природними ключами й не чіпає студентських даних. Просто запусти ще раз.
+
+15. **Зняття ролі `Admins` незворотне з продукту.** Повернути її може лише той,
     хто вже адмін, — а якщо адмінів не лишилось, то тільки AWS CLI. Так уже
     сталося: `/admin/users` малювала «Зняти Admins» на кожному рядку, включно
     з рядком того, хто залогінений, і панель замкнулася зсередини. Разом з нею
@@ -181,7 +195,7 @@ aws cognito-idp admin-set-user-password --user-pool-id us-east-1_vyZTt69y0 --use
     Далі обов'язково **перезайти в акаунт**: група береться з ID-токена, і
     старий токен її не містить.
 
-15. **Тут Windows, а не bash.** `npx` — це `npx.ps1`, і політика виконання
+16. **Тут Windows, а не bash.** `npx` — це `npx.ps1`, і політика виконання
     PowerShell його блокує (`running scripts is disabled`): треба `npx.cmd`
     або прямо `.\node_modules\.bin\<tool>.cmd`. Політику виконання при цьому
     міняти НЕ треба — обмеження стосується лише `.ps1`-обгорток. Префікса
