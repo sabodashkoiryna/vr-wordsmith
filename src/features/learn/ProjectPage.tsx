@@ -5,11 +5,12 @@ import ProgressBar from '../../ui/ProgressBar';
 import { client } from '../../lib/amplify-client';
 import { unwrap } from '../../lib/unwrap';
 import { useCourseTree } from './useCourseTree';
+import ProjectSubmission from './ProjectSubmission';
 import { READING_THEMES, useReadingTheme } from './readingTheme';
 import LessonContent from './LessonContent';
 
 type Criterion = { id: string; order: number; blockLabel: string | null; code: string; text: string; maxPoints: number };
-type Loaded = { instructions: string | null; criteria: Criterion[] };
+type Loaded = { instructions: string | null; allowExternalLink: boolean; criteria: Criterion[] };
 
 const STATUS_LABEL: Record<string, string> = {
   not_started: 'Не розпочато',
@@ -28,7 +29,7 @@ const STATUS_LABEL: Record<string, string> = {
  * голові викладача.
  */
 export default function ProjectPage() {
-  const { tree, error } = useCourseTree();
+  const { tree, error, reload } = useCourseTree();
   const { theme, setTheme } = useReadingTheme();
   const [body, setBody] = useState<Loaded | null>(null);
   const [bodyError, setBodyError] = useState<string | null>(null);
@@ -53,6 +54,7 @@ export default function ProjectPage() {
         if (cancelled) return;
         setBody({
           instructions: assignment?.instructions ?? null,
+          allowExternalLink: assignment?.allowExternalLink !== false,
           criteria: criteria
             .map((c) => ({
               id: c.id,
@@ -102,6 +104,7 @@ export default function ProjectPage() {
 
   const project = tree.project;
   const rawMax = (body?.criteria ?? []).reduce((s, c) => s + c.maxPoints, 0);
+  const allowExternalLink = body?.allowExternalLink !== false;
 
   // Критерії згруповані блоками рубрики — саме так їх читає і студент, і
   // адмін у черзі оцінювання.
@@ -141,9 +144,9 @@ export default function ProjectPage() {
           <div className="rounded-[var(--radius-lg)] bg-space-800 p-6">
             <div className="font-mono text-2xs tracking-widest text-ink-mute">СТАН</div>
             <div className="mt-2 text-lg text-ink">{STATUS_LABEL[project.status]}</div>
-            {project.status === 'not_started' && (
-              <p className="mt-2 text-sm text-ink-mute">
-                Форма здачі з’явиться тут найближчим оновленням.
+            {project.status === 'returned' && (
+              <p className="mt-2 text-sm text-warning">
+                Викладач повернув роботу — виправте й здайте ще раз.
               </p>
             )}
           </div>
@@ -192,6 +195,14 @@ export default function ProjectPage() {
           {!bodyError && !body && <p className="text-ink-mute">Завантажуємо…</p>}
           {body?.instructions && <LessonContent markdown={body.instructions} />}
         </div>
+      </section>
+
+      <section className="container-content relative pb-10">
+        <ProjectSubmission
+          assignmentId={project.id}
+          allowExternalLink={allowExternalLink}
+          onChanged={reload}
+        />
       </section>
 
       <section className="container-content relative pb-24">

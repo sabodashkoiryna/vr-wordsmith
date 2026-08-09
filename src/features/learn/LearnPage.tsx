@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import ProgressBar from '../../ui/ProgressBar';
+import ProgressRing from '../../ui/ProgressRing';
 import { Reveal } from '../../ui/motion/Reveal';
+import { useCountUp } from '../../ui/motion/useCountUp';
 import { useAuth } from '../../context/AuthContext';
 import { useCourseTree, type LessonNode, type ModuleNode } from './useCourseTree';
 import { KIND_LABEL, lessonHref } from './lessonMeta';
@@ -87,6 +89,9 @@ function ModuleCard({ module, index }: { module: ModuleNode; index: number }) {
 export default function LearnPage() {
   const { fullName, profileError } = useAuth();
   const { tree, error } = useCourseTree();
+  // Хук мусить викликатись до будь-якого раннього return, тому не всередині
+  // гілки «дерево завантажилось».
+  const animatedPoints = useCountUp(tree?.points?.total ?? 0);
 
   if (error) {
     return (
@@ -144,40 +149,55 @@ export default function LearnPage() {
           </p>
         ) : (
           <>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:max-w-3xl">
-              <div className="rounded-[var(--radius-lg)] bg-space-800 p-6">
-                <div className="font-mono text-2xs tracking-widest text-ink-mute">УРОКИ</div>
-                <div className="mt-2 font-display text-2xl text-ink">
-                  {tree.completedCount}
-                  <span className="text-ink-mute"> / {tree.lessonCount}</span>
-                </div>
-                <ProgressBar
+            <Reveal className="mt-8 grid gap-4 sm:grid-cols-2 lg:max-w-3xl">
+              <div className="flex items-center gap-6 rounded-[var(--radius-lg)] bg-space-800 p-6">
+                <ProgressRing
                   value={tree.completedCount}
                   max={tree.lessonCount}
-                  label="Загальний прогрес курсу"
-                  className="mt-4"
+                  label="Пройдено уроків"
+                  caption="УРОКІВ"
                 />
+                <div className="min-w-0">
+                  <div className="font-mono text-2xs tracking-widest text-ink-mute">ПРОГРЕС</div>
+                  <p className="mt-2 text-ink-soft">
+                    {tree.completedCount === 0
+                      ? 'Ще нічого не пройдено — почніть з першого уроку.'
+                      : tree.completedCount === tree.lessonCount
+                        ? 'Усі уроки пройдено.'
+                        : `Лишилось ${tree.lessonCount - tree.completedCount} уроків.`}
+                  </p>
+                </div>
               </div>
 
               <div className="rounded-[var(--radius-lg)] bg-space-800 p-6">
                 <div className="font-mono text-2xs tracking-widest text-ink-mute">БАЛИ</div>
                 <div className="mt-2 font-display text-2xl text-ink">
-                  {tree.points?.total ?? 0}
+                  {Math.round(animatedPoints)}
                   <span className="text-ink-mute"> / {tree.totalPoints}</span>
                 </div>
-                <ProgressBar
-                  value={tree.points?.total ?? 0}
-                  max={tree.totalPoints}
-                  label="Набрані бали"
-                  tone="gold"
-                  className="mt-4"
-                />
+                {/* Дві шкали на одній осі: набране й поріг сертифіката. Поріг,
+                    показаний окремим числом під смугою, не відповідає на
+                    питання «скільки ще» — а саме воно тут єдине важливе. */}
+                <div className="relative mt-4">
+                  <ProgressBar
+                    value={tree.points?.total ?? 0}
+                    max={tree.totalPoints}
+                    label="Набрані бали"
+                    tone="gold"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-1 h-3.5 w-0.5 rounded-full bg-ink-mute"
+                    style={{ left: `${(tree.passingPoints / tree.totalPoints) * 100}%` }}
+                  />
+                </div>
                 <p className="mt-3 text-sm text-ink-mute">
-                  Сертифікат — від {tree.passingPoints} балів. Тести оцінюються автоматично,
-                  проєкт — викладачем.
+                  {(tree.points?.total ?? 0) >= tree.passingPoints
+                    ? `Поріг сертифіката (${tree.passingPoints}) пройдено.`
+                    : `До сертифіката — ще ${tree.passingPoints - (tree.points?.total ?? 0)} балів з ${tree.passingPoints}.`}
                 </p>
               </div>
-            </div>
+            </Reveal>
 
             {next ? (
               /* Картка, а не самотня кнопка: «Продовжити» без назви уроку не
