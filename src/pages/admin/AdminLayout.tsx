@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const NAV = [
   { to: '/admin', label: 'Огляд', end: true },
+  { to: '/admin/grading', label: 'Оцінювання' },
   { to: '/admin/modules', label: 'Модулі' },
   { to: '/admin/resources', label: 'Ресурси' },
   { to: '/admin/diagnostics', label: 'Діагностика' },

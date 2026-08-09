@@ -27,6 +27,9 @@ import UsersAdmin from './pages/admin/UsersAdmin';
 const LearnPage = lazy(() => import('./features/learn/LearnPage'));
 const LessonPage = lazy(() => import('./features/learn/LessonPage'));
 const ProjectPage = lazy(() => import('./features/learn/ProjectPage'));
+// Черга оцінювання тягне aws-amplify/storage заради посилань на файли
+// студентів — окремим чанком, як і решта адмінських екранів.
+const GradingQueue = lazy(() => import('./features/admin/GradingQueue'));
 
 function Loading() {
   return (
@@ -97,6 +100,14 @@ export default function App() {
               }
             >
               <Route index element={<AdminDashboard />} />
+              <Route
+                path="grading"
+                element={
+                  <Suspense fallback={<Loading />}>
+                    <GradingQueue />
+                  </Suspense>
+                }
+              />
               <Route path="modules" element={<ModulesAdmin />} />
               <Route path="resources" element={<ResourcesAdmin />} />
               <Route path="diagnostics" element={<DiagnosticsAdmin />} />
