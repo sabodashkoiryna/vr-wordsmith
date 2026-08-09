@@ -63,21 +63,37 @@ Tailwind v4, AWS Amplify Gen2 (Cognito, AppSync/DynamoDB, S3, Lambda).
 
 ## Команди
 
-```bash
-# усі команди з кореня vr-wordsmith, PATH має містити node і aws cli
-npm run dev                      # локальний фронтенд
-npm run build                    # tsc + vite build
-npx tsc -p amplify --noEmit      # тайпчек бекенду ($amplify/env — очікувані помилки)
+Проєкт живе на Windows, тож нижче — PowerShell. Три речі, на які тут уже
+наступали (див. пастку 14): `npx` без `.cmd` блокується політикою виконання,
+префікса змінних перед командою в PowerShell не існує, і всі команди
+виконуються **з кореня `vr-wordsmith`**, а не з `C:\project_nulp`.
 
-npx ampx sandbox --once --identifier <name>   # ізольований бекенд для перевірок
-npx ampx sandbox delete --identifier <name>   # прибрати його
+```powershell
+npm run dev                          # локальний фронтенд
+npm run build                        # tsc + vite build
+npx.cmd tsc -p amplify --noEmit      # тайпчек бекенду ($amplify/env — очікувані помилки)
+
+npx.cmd ampx sandbox --once --identifier <name>   # ізольований бекенд для перевірок
+npx.cmd ampx sandbox delete --identifier <name>   # прибрати його
 
 # AWS_REGION обов'язковий, інакше скаже "Stack does not exist" (пастка 10)
-AWS_REGION=us-east-1 npx ampx generate outputs --app-id d1fmnqsgshywg2 --branch master --out-dir <dir>
+$env:AWS_REGION = "us-east-1"
+npx.cmd ampx generate outputs --app-id d1fmnqsgshywg2 --branch master --out-dir <dir>
 
-ADMIN_EMAIL=... ADMIN_PASSWORD=... npx tsx scripts/seed-course.ts <outputs.json>
-STUDENT_EMAIL=... STUDENT_PASSWORD=... ADMIN_EMAIL=... ADMIN_PASSWORD=... \
-  npx tsx scripts/verify-access.ts <outputs.json>
+# Пароль через Read-Host, щоб не осідав в історії команд; наприкінці — очистити.
+$env:ADMIN_EMAIL = "<email>"; $env:ADMIN_PASSWORD = Read-Host "Пароль адміна"
+.\node_modules\.bin\tsx.cmd scripts/seed-course.ts amplify_outputs.master.json
+$env:ADMIN_PASSWORD = $null
+
+$env:STUDENT_EMAIL = "<email>"; $env:STUDENT_PASSWORD = Read-Host "Пароль студента"
+.\node_modules\.bin\tsx.cmd scripts/verify-access.ts amplify_outputs.master.json
+$env:STUDENT_PASSWORD = $null; $env:ADMIN_PASSWORD = $null
+```
+
+Скинути пароль адміна (pool гілки `master` — `us-east-1_vyZTt69y0`):
+
+```powershell
+aws cognito-idp admin-set-user-password --user-pool-id us-east-1_vyZTt69y0 --username <email> --password "<новий>" --permanent --region us-east-1
 ```
 
 ## Пастки, що вже коштували часу
@@ -145,6 +161,14 @@ STUDENT_EMAIL=... STUDENT_PASSWORD=... ADMIN_EMAIL=... ADMIN_PASSWORD=... \
     `.js`-чанк повертав би HTML із кодом 200 і застосунок ламався б незрозуміло.
     Правило живе в налаштуваннях застосунку, не в репозиторії:
     `aws amplify get-app --app-id d1fmnqsgshywg2 --query "app.customRules"`.
+    Копія — `docs/amplify-custom-rules.json`.
+
+14. **Тут Windows, а не bash.** `npx` — це `npx.ps1`, і політика виконання
+    PowerShell його блокує (`running scripts is disabled`): треба `npx.cmd`
+    або прямо `.\node_modules\.bin\<tool>.cmd`. Політику виконання при цьому
+    міняти НЕ треба — обмеження стосується лише `.ps1`-обгорток. Префікса
+    змінних перед командою (`VAR=x cmd`) у PowerShell не існує взагалі:
+    `$env:VAR = "x"` окремим виразом. І `&&` між командами теж немає — `;`.
 
 ## Структура
 
