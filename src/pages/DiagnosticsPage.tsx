@@ -18,7 +18,6 @@ type TabId = (typeof TABS)[number]['id'];
 type DiagInstrumentRow = {
   code: string;
   title: string;
-  type: string;
   instructions?: string | null;
   boundsLow?: number | null;
   boundsHigh?: number | null;

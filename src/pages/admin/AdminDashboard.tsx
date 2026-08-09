@@ -14,7 +14,7 @@ export default function AdminDashboard() {
           client.models.Module.list(),
           client.models.UserProfile.list(),
           client.models.Attempt.list(),
-          client.models.ProjectSubmission.list(),
+          client.models.AssignmentSubmission.list(),
         ]);
         setCounts({
           modules: modules.data.length,
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
           </div>
           <div className="tile">
             <b>{counts.submissions}</b>
-            <p>подань проєктів (модуль 4)</p>
+            <p>поданих практичних робіт</p>
           </div>
         </div>
       )}

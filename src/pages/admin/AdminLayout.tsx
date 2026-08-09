@@ -4,12 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 const NAV = [
   { to: '/admin', label: 'Огляд', end: true },
   { to: '/admin/modules', label: 'Модулі' },
-  { to: '/admin/matrix', label: 'Матриця' },
   { to: '/admin/resources', label: 'Ресурси' },
-  { to: '/admin/experiment', label: 'Експеримент' },
   { to: '/admin/diagnostics', label: 'Діагностика' },
   { to: '/admin/users', label: 'Користувачі' },
-  { to: '/admin/results', label: 'Результати' },
 ];
 
 export default function AdminLayout() {
