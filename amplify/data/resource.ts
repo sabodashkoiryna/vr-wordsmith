@@ -221,13 +221,19 @@ const schema = a.schema({
     .secondaryIndexes((index) => [index('quizId'), index('questionId')])
     .authorization((allow) => [allow.groups(["Admins"])]),
 
+  /** Курсовий проєкт. Один на весь курс, 40 балів, оцінює викладач, і саме
+   *  він може потрапити в галерею. Тому `moduleId` НЕ обов'язковий: проєкт
+   *  не належить жодному модулю, він підсумовує їх усі. `slug` дає сталу
+   *  адресу (`/learn/project`), яка не залежить від того, скільки завдань
+   *  з'явиться згодом. */
   Assignment: a
     .model({
-      moduleId: a.id().required(),
+      slug: a.string(),
+      moduleId: a.id(),
       lessonId: a.id(),
       title: a.string().required(),
       instructions: a.string(),
-      maxPoints: a.float().required(), // 12
+      maxPoints: a.float().required(), // 40
       allowExternalLink: a.boolean(),
       maxFileSizeMb: a.integer(),
     })
@@ -329,7 +335,7 @@ const schema = a.schema({
     .model({
       studentId: a.id().required(),
       assignmentId: a.id().required(),
-      moduleId: a.id().required(),
+      moduleId: a.id(), // курсовий проєкт не належить модулю
       title: a.string().required(),
       description: a.string(),
       externalUrl: a.string(),
@@ -354,16 +360,20 @@ const schema = a.schema({
       submissionId: a.id().required(),
       studentId: a.id().required(),
       assignmentId: a.id().required(),
-      moduleId: a.id().required(),
+      moduleId: a.id(), // курсовий проєкт не належить модулю
       rubricScores: a.json(), // {"А1":3,...}
-      rubricRawTotal: a.float(), // 0..36 — потрібен для дисертаційної статистики
-      pointsAwarded: a.float().required(), // 0..12
+      rubricRawTotal: a.float(), // сира сума рубрики — для дисертаційної статистики
+      pointsAwarded: a.float().required(), // 0..40
       maxPoints: a.float().required(),
       comment: a.string(),
       gradedByName: a.string(),
       gradedAt: a.datetime().required(),
     })
-    .secondaryIndexes((index) => [index('studentId').sortKeys(['moduleId']), index('submissionId')])
+    /* Сортувальним ключем був moduleId. У DynamoDB елемент без ключа індексу
+       в індекс просто не потрапляє — тобто оцінки за курсовий проєкт, який
+       модуля не має, тихо зникли б з нього. Індекс за studentId цього
+       не потребує. */
+    .secondaryIndexes((index) => [index('studentId'), index('submissionId')])
     .authorization((allow) => [
       allow.ownerDefinedIn('studentId').identityClaim('sub').to(['read']),
       allow.groups(['Admins']).to(['read']),

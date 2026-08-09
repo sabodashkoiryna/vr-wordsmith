@@ -40,6 +40,14 @@ export type CourseTree = {
    *  розмітку, довелося б потім вишукувати по всьому дереву. */
   totalPoints: number;
   passingPoints: number;
+  /** Курсовий проєкт. Поза модулями: він підсумовує їх усі. */
+  project: {
+    id: string;
+    title: string;
+    maxPoints: number;
+    status: 'not_started' | 'draft' | 'submitted' | 'returned' | 'graded';
+    pointsAwarded: number | null;
+  } | null;
 };
 
 const EMPTY: CourseTree = {
@@ -48,8 +56,11 @@ const EMPTY: CourseTree = {
   completedCount: 0,
   points: null,
   totalPoints: 100,
-  passingPoints: 60,
+  passingPoints: 70,
+  project: null,
 };
+
+export const PROJECT_SLUG = 'course-project';
 
 /**
  * Дерево курсу для кабінету: модулі → уроки + відмітки про проходження.
@@ -68,13 +79,17 @@ export function useCourseTree() {
     if (!userId) return;
     try {
       setError(null);
-      const [modules, lessons, progress, enrollments, courses] = await Promise.all([
-        unwrap(client.models.Module.list({ limit: 200 })),
-        unwrap(client.models.Lesson.list({ limit: 500 })),
-        unwrap(client.models.LessonProgress.list({ limit: 500 })),
-        unwrap(client.models.CourseEnrollment.list({ limit: 2 })),
-        unwrap(client.models.Course.list({ limit: 2 })),
-      ]);
+      const [modules, lessons, progress, enrollments, courses, assignments, submissions, grades] =
+        await Promise.all([
+          unwrap(client.models.Module.list({ limit: 200 })),
+          unwrap(client.models.Lesson.list({ limit: 500 })),
+          unwrap(client.models.LessonProgress.list({ limit: 500 })),
+          unwrap(client.models.CourseEnrollment.list({ limit: 2 })),
+          unwrap(client.models.Course.list({ limit: 2 })),
+          unwrap(client.models.Assignment.list({ limit: 20 })),
+          unwrap(client.models.AssignmentSubmission.list({ limit: 20 })),
+          unwrap(client.models.AssignmentGrade.list({ limit: 20 })),
+        ]);
 
       const done = new Set(
         progress.filter((p) => p.status === 'completed').map((p) => p.lessonId),
@@ -120,6 +135,15 @@ export function useCourseTree() {
 
       const e = enrollments[0];
       const course = courses[0];
+
+      // Подання й оцінки видно лише власні (правило ownerDefinedIn), тож
+      // фільтрувати за studentId тут не треба — база вже це зробила.
+      const projectRow = assignments.find((a) => a.slug === PROJECT_SLUG) ?? assignments[0] ?? null;
+      const submission = projectRow
+        ? submissions.find((s) => s.assignmentId === projectRow.id)
+        : undefined;
+      const grade = projectRow ? grades.find((g) => g.assignmentId === projectRow.id) : undefined;
+
       setTree({
         modules: moduleNodes,
         lessonCount: moduleNodes.reduce((n, m) => n + m.lessons.length, 0),
@@ -129,6 +153,17 @@ export function useCourseTree() {
           : null,
         totalPoints: course?.totalPoints ?? EMPTY.totalPoints,
         passingPoints: course?.passingPoints ?? EMPTY.passingPoints,
+        project: projectRow
+          ? {
+              id: projectRow.id,
+              title: projectRow.title,
+              maxPoints: projectRow.maxPoints,
+              status: grade
+                ? 'graded'
+                : ((submission?.status as 'draft' | 'submitted' | 'returned') ?? 'not_started'),
+              pointsAwarded: grade?.pointsAwarded ?? null,
+            }
+          : null,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не вдалося завантажити курс');

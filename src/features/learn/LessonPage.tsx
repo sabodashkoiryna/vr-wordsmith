@@ -255,13 +255,6 @@ export default function LessonPage() {
           </div>
         )}
 
-        {lesson.kind === 'assignment' && (
-          <p className="mt-5 rounded-[var(--radius-sm)] bg-space-700 p-4 text-sm text-ink-soft">
-            Форма здачі практичної з’явиться тут найближчим оновленням. Поки що ознайомтеся
-            із завданням і критеріями вище.
-          </p>
-        )}
-
         {saveError && <p className="mt-5 text-sm text-danger">{saveError}</p>}
 
         <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-[var(--line)] pt-6">

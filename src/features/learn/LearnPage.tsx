@@ -224,6 +224,42 @@ export default function LearnPage() {
         {tree.modules.map((m, i) => (
           <ModuleCard key={m.id} module={m} index={i} />
         ))}
+
+        {/* Проєкт окремим блоком, а не шостим модулем: він не додає знань, він
+            їх підсумовує — і саме він вирішує, буде сертифікат чи ні. */}
+        {tree.project && (
+          <Reveal as="section" className="rounded-[var(--radius-lg)] bg-space-800 p-6 md:p-7">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded-full bg-space-600 px-2.5 py-1 font-mono text-2xs tracking-widest text-gold">
+                КУРСОВИЙ ПРОЄКТ
+              </span>
+              <span className="font-mono text-2xs text-ink-mute">
+                {tree.project.maxPoints} балів · оцінює викладач
+              </span>
+            </div>
+
+            <h2 className="mt-3 text-xl text-ink">{tree.project.title}</h2>
+            <p className="mt-2 max-w-2xl text-ink-soft">
+              Підсумок курсу. Тести дають щонайбільше{' '}
+              {tree.totalPoints - tree.project.maxPoints} балів, а сертифікат — від{' '}
+              {tree.passingPoints}, тож без проєкту його не отримати.
+            </p>
+
+            <div className="mt-5 flex flex-wrap items-center gap-4">
+              <Link
+                to="/learn/project"
+                className="btn-aurora inline-flex items-center gap-2 rounded-full px-6 py-3.5 font-mono text-xs tracking-[0.04em] whitespace-nowrap text-white no-underline transition-[filter] hover:brightness-115"
+              >
+                {tree.project.status === 'not_started' ? 'Відкрити завдання' : 'До проєкту'} →
+              </Link>
+              <span className="font-mono text-2xs text-ink-mute">
+                {tree.project.pointsAwarded !== null
+                  ? `Оцінено: ${tree.project.pointsAwarded} з ${tree.project.maxPoints}`
+                  : 'Рубрику видно до здачі'}
+              </span>
+            </div>
+          </Reveal>
+        )}
       </section>
     </div>
   );

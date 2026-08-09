@@ -8,7 +8,13 @@ const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(env)
 Amplify.configure(resourceConfig, libraryOptions);
 const data = generateClient<Schema>({ authMode: 'iam' });
 
-const PASSING_POINTS = 60;
+/** Поріг сертифіката живе в Course, а не константою тут: правила оцінювання
+ *  вже мінялися, і константа в Lambda — те місце, куди при зміні не заглянуть.
+ *  issue-certificate читає його звідти ж, тож обидві функції не розійдуться. */
+async function passingPoints(): Promise<number> {
+  const { data: courses } = await data.models.Course.list({ limit: 1 });
+  return courses[0]?.passingPoints ?? 70;
+}
 
 export const handler: Schema['gradeAssignment']['functionHandler'] = async (event) => {
   const { submissionId, comment, returnForRevision } = event.arguments;
@@ -80,7 +86,7 @@ export const handler: Schema['gradeAssignment']['functionHandler'] = async (even
     pointsAwarded,
     rubricRawTotal,
     courseTotalPoints,
-    certificateEligible: courseTotalPoints >= PASSING_POINTS,
+    certificateEligible: courseTotalPoints >= (await passingPoints()),
   };
 };
 

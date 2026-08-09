@@ -10,7 +10,9 @@ export const courseMeta = {
   hours: 60,
   ectsCredits: 2,
   totalPoints: 100,
-  passingPoints: 60,
+  // 5 тестів × 12 = 60 + курсовий проєкт 40. Поріг вище за суму тестів
+  // навмисно: сертифікат неможливо взяти, не здавши проєкт.
+  passingPoints: 70,
   isPublished: true,
 };
 

@@ -21,7 +21,7 @@ export const handler: Schema['issueCertificate']['functionHandler'] = async (eve
 
   const { data: courses } = await data.models.Course.list({ limit: 1 });
   const course = courses[0];
-  const passingPoints = course?.passingPoints ?? 60;
+  const passingPoints = course?.passingPoints ?? 70;
   const maxPoints = course?.totalPoints ?? 100;
 
   // Свідомо перераховуємо з першоджерел, а НЕ довіряємо CourseEnrollment:

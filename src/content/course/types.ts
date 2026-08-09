@@ -37,8 +37,17 @@ export type RubricBlockSeed = {
   criteria: { code: string; text: string }[];
 };
 
-export type AssignmentSeed = {
+/**
+ * Курсовий проєкт. Один на весь курс і поза модулями: він підсумовує їх усі,
+ * оцінюється викладачем і саме він може потрапити в публічну галерею.
+ *
+ * `slug` дає сталу адресу (`/learn/project`), незалежну від того, скільки
+ * завдань з'явиться згодом.
+ */
+export type ProjectSeed = {
+  slug: string;
   title: string;
+  summary: string;
   instructions: string;
   maxPoints: number;
   allowExternalLink: boolean;
@@ -55,5 +64,4 @@ export type ModuleSeed = {
   topics: string[];
   lessons: LessonSeed[];
   quiz: QuizSeed;
-  assignment: AssignmentSeed;
 };

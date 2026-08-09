@@ -17,8 +17,10 @@
  *     звіряється за Module.code / Lesson.slug; студентські дані не чіпаються
  *     взагалі.
  *
- *  Плюс перевірка інваріанта балів: Σ тестів = 40, Σ практичних = 60.
- *  Якщо сума розійшлася — падаємо, бо на ній тримається поріг сертифіката.
+ *  Плюс перевірка інваріанта балів: Σ тестів = 60, курсовий проєкт = 40, а
+ *  поріг сертифіката ВИЩИЙ за суму тестів — інакше сертифікат можна було б
+ *  узяти, жодного разу не здавши проєкт. Якщо щось із цього не сходиться,
+ *  падаємо до першого запису.
  *
  * Запуск:
  *   ADMIN_EMAIL=... ADMIN_PASSWORD=... npx tsx scripts/seed-course.ts <outputs.json>
@@ -31,6 +33,7 @@ import { readFileSync } from 'node:fs';
 import type { Schema } from '../amplify/data/resource';
 import { modules } from '../src/content/course/modules';
 import { courseMeta, benefits, instructors, galleryPlaceholders } from '../src/content/course/meta';
+import { courseProject } from '../src/content/course/project';
 
 const outputsPath = process.argv[2];
 if (!outputsPath) {
@@ -72,17 +75,28 @@ async function main() {
 
   // ── 0. Інваріант балів перевіряємо ДО запису, а не після ────────────────
   const quizTotal = modules.reduce((s, m) => s + m.quiz.maxPoints, 0);
-  const assignmentTotal = modules.reduce((s, m) => s + m.assignment.maxPoints, 0);
-  if (quizTotal !== 40 || assignmentTotal !== 60) {
+  const projectTotal = courseProject.maxPoints;
+  if (quizTotal !== 60 || projectTotal !== 40) {
     throw new Error(
-      `Інваріант балів порушено: тести ${quizTotal} (очікується 40), ` +
-        `практичні ${assignmentTotal} (очікується 60). Курс не засіяно.`,
+      `Інваріант балів порушено: тести ${quizTotal} (очікується 60), ` +
+        `проєкт ${projectTotal} (очікується 40). Курс не засіяно.`,
     );
   }
-  if (courseMeta.totalPoints !== quizTotal + assignmentTotal) {
-    throw new Error(`Course.totalPoints=${courseMeta.totalPoints} ≠ ${quizTotal + assignmentTotal}`);
+  if (courseMeta.totalPoints !== quizTotal + projectTotal) {
+    throw new Error(`Course.totalPoints=${courseMeta.totalPoints} ≠ ${quizTotal + projectTotal}`);
   }
-  console.log(`✓ Інваріант балів: ${quizTotal} + ${assignmentTotal} = ${courseMeta.totalPoints}`);
+  // Поріг МУСИТЬ бути вищим за суму тестів, інакше сертифікат можна взяти,
+  // жодного разу не здавши проєкт — а він і є підсумком курсу.
+  if (courseMeta.passingPoints <= quizTotal) {
+    throw new Error(
+      `Поріг сертифіката ${courseMeta.passingPoints} не перевищує суму тестів ${quizTotal}: ` +
+        'проєкт став би необовʼязковим. Курс не засіяно.',
+    );
+  }
+  console.log(
+    `✓ Інваріант балів: тести ${quizTotal} + проєкт ${projectTotal} = ${courseMeta.totalPoints}, ` +
+      `поріг ${courseMeta.passingPoints}`,
+  );
 
   // ── 1. Курс ─────────────────────────────────────────────────────────────
   const existingCourses = await listAll<{ id: string; slug: string }>(client.models.Course);
@@ -122,7 +136,7 @@ async function main() {
   const existingModules = await listAll<{ id: string; code: string }>(client.models.Module);
   const existingLessons = await listAll<{ id: string; slug: string }>(client.models.Lesson);
   const existingQuizzes = await listAll<{ id: string; moduleId: string }>(client.models.Quiz);
-  const existingAssignments = await listAll<{ id: string; moduleId: string }>(
+  const existingAssignments = await listAll<{ id: string; moduleId: string | null; slug: string | null }>(
     client.models.Assignment,
   );
 
@@ -136,7 +150,7 @@ async function main() {
       topics: m.topics,
       component: m.component,
       quizPoints: m.quiz.maxPoints,
-      assignmentPoints: m.assignment.maxPoints,
+      assignmentPoints: 0, // практичних у модулях більше немає — усе в курсовому проєкті
       isPublished: true,
     };
     const hitModule = existingModules.find((x) => x.code === m.code);
@@ -145,7 +159,21 @@ async function main() {
       : await must(`Module ${m.code}`, client.models.Module.create(modulePayload));
     const moduleId = moduleRow.id;
 
-    // 3a. Уроки
+    // 3a. Уроки. Спершу прибираємо ті, яких у контенті вже немає: upsert за
+    //     slug'ом сам по собі нічого не видаляє, тож зняті з програми уроки
+    //     (як п'ять практичних) лишалися б у базі й далі малювалися в дереві
+    //     курсу — з посиланнями в нікуди.
+    const wantedSlugs = new Set(m.lessons.map((l) => l.slug));
+    const staleLessons = (
+      await listAll<{ id: string; slug: string; moduleId: string }>(client.models.Lesson)
+    ).filter((x) => x.moduleId === moduleId && !wantedSlugs.has(x.slug));
+    for (const s of staleLessons) {
+      await must(`Lesson.delete ${s.slug}`, client.models.Lesson.delete({ id: s.id }));
+    }
+    if (staleLessons.length) {
+      console.log(`  ${m.code}: прибрано застарілих уроків ${staleLessons.length}`);
+    }
+
     for (const [li, l] of m.lessons.entries()) {
       const payload = {
         moduleId,
@@ -247,57 +275,66 @@ async function main() {
     }
     console.log(`  ${m.code}: питань ${m.quiz.questions.length}, ключів стільки ж`);
 
-    // 3c. Практичне й рубрика
-    const assignmentLesson = m.lessons.find((l) => l.kind === 'assignment');
-    let assignmentLessonId: string | null = null;
-    if (assignmentLesson) {
-      const lessonRow = (await listAll<{ id: string; slug: string }>(client.models.Lesson)).find(
-        (x) => x.slug === assignmentLesson.slug,
-      );
-      assignmentLessonId = lessonRow?.id ?? null;
-    }
-    const assignmentPayload = {
-      moduleId,
-      lessonId: assignmentLessonId,
-      title: m.assignment.title,
-      instructions: m.assignment.instructions,
-      maxPoints: m.assignment.maxPoints,
-      allowExternalLink: m.assignment.allowExternalLink,
-      maxFileSizeMb: 50,
-    };
-    const hitAssignment = existingAssignments.find((x) => x.moduleId === moduleId);
-    const assignmentRow = hitAssignment
-      ? await must(
-          `Assignment ${m.code}`,
-          client.models.Assignment.update({ id: hitAssignment.id, ...assignmentPayload }),
-        )
-      : await must(`Assignment ${m.code}`, client.models.Assignment.create(assignmentPayload));
-
-    const oldCriteria = (
-      await listAll<{ id: string; assignmentId: string }>(client.models.RubricCriterion)
-    ).filter((x) => x.assignmentId === assignmentRow.id);
-    for (const c of oldCriteria) await client.models.RubricCriterion.delete({ id: c.id });
-
-    let order = 0;
-    let criteriaCount = 0;
-    for (const block of m.assignment.rubric) {
-      for (const c of block.criteria) {
-        await must(
-          `RubricCriterion ${m.code} ${c.code}`,
-          client.models.RubricCriterion.create({
-            assignmentId: assignmentRow.id,
-            order: order++,
-            blockLabel: block.label,
-            code: c.code,
-            text: c.text,
-            maxPoints: 3,
-          }),
-        );
-        criteriaCount++;
-      }
-    }
-    console.log(`  ${m.code}: критеріїв рубрики ${criteriaCount}`);
   }
+
+  // ── 3d. Курсовий проєкт ─────────────────────────────────────────────────
+  //  Один на весь курс і поза модулями. Помодульні практичні, що були тут
+  //  раніше, прибрано разом з їхніми уроками — старі рядки Assignment
+  //  видаляємо явно, бо звірка за slug'ом їх не бачить: у них slug порожній.
+  const staleAssignments = existingAssignments.filter((x) => x.slug !== courseProject.slug);
+  for (const a of staleAssignments) {
+    const itsCriteria = (
+      await listAll<{ id: string; assignmentId: string }>(client.models.RubricCriterion)
+    ).filter((c) => c.assignmentId === a.id);
+    for (const c of itsCriteria) await client.models.RubricCriterion.delete({ id: c.id });
+    await must(`Assignment.delete ${a.id}`, client.models.Assignment.delete({ id: a.id }));
+  }
+  if (staleAssignments.length) {
+    console.log(`✓ Прибрано помодульних практичних: ${staleAssignments.length}`);
+  }
+
+  const projectPayload = {
+    slug: courseProject.slug,
+    moduleId: null,
+    lessonId: null,
+    title: courseProject.title,
+    instructions: courseProject.instructions,
+    maxPoints: courseProject.maxPoints,
+    allowExternalLink: courseProject.allowExternalLink,
+    maxFileSizeMb: 50,
+  };
+  const hitProject = existingAssignments.find((x) => x.slug === courseProject.slug);
+  const projectRow = hitProject
+    ? await must('Project.update', client.models.Assignment.update({ id: hitProject.id, ...projectPayload }))
+    : await must('Project.create', client.models.Assignment.create(projectPayload));
+
+  // Рубрику пересіваємо повністю: оцінки посилаються на КОДИ критеріїв, тож
+  // часткове оновлення лишило б рубрику, що не збігається з виставленими балами.
+  const oldProjectCriteria = (
+    await listAll<{ id: string; assignmentId: string }>(client.models.RubricCriterion)
+  ).filter((x) => x.assignmentId === projectRow.id);
+  for (const c of oldProjectCriteria) await client.models.RubricCriterion.delete({ id: c.id });
+
+  let criterionOrder = 0;
+  for (const block of courseProject.rubric) {
+    for (const c of block.criteria) {
+      await must(
+        `RubricCriterion ${c.code}`,
+        client.models.RubricCriterion.create({
+          assignmentId: projectRow.id,
+          order: criterionOrder++,
+          blockLabel: block.label,
+          code: c.code,
+          text: c.text,
+          maxPoints: 3,
+        }),
+      );
+    }
+  }
+  console.log(
+    `✓ Курсовий проєкт: ${courseProject.maxPoints} балів, критеріїв ${criterionOrder} ` +
+      `(сирих ${criterionOrder * 3} → ${courseProject.maxPoints})`,
+  );
 
   // ── 4. Заготовки галереї ────────────────────────────────────────────────
   const existingGallery = await listAll<{ id: string; title: string }>(client.models.GalleryItem);

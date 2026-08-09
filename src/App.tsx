@@ -26,6 +26,7 @@ import UsersAdmin from './pages/admin/UsersAdmin';
 // завантажував би парсер markdown, який йому нема де застосувати.
 const LearnPage = lazy(() => import('./features/learn/LearnPage'));
 const LessonPage = lazy(() => import('./features/learn/LessonPage'));
+const ProjectPage = lazy(() => import('./features/learn/ProjectPage'));
 
 function Loading() {
   return (
@@ -61,6 +62,16 @@ export default function App() {
                 <RequireAuth>
                   <Suspense fallback={<Loading />}>
                     <LearnPage />
+                  </Suspense>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/learn/project"
+              element={
+                <RequireAuth>
+                  <Suspense fallback={<Loading />}>
+                    <ProjectPage />
                   </Suspense>
                 </RequireAuth>
               }
