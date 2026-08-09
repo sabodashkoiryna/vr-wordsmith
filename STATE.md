@@ -91,6 +91,9 @@ $env:ADMIN_PASSWORD = $null
 $env:STUDENT_EMAIL = "<email>"; $env:STUDENT_PASSWORD = Read-Host "Пароль студента"
 .\node_modules\.bin\tsx.cmd scripts/verify-access.ts amplify_outputs.master.json
 $env:STUDENT_PASSWORD = $null; $env:ADMIN_PASSWORD = $null
+
+# Гостьова половина матриці — БЕЗ облікових даних, можна ганяти після кожного деплою
+.\node_modules\.bin\tsx.cmd scripts/verify-guest-access.ts amplify_outputs.master.json
 ```
 
 Скинути пароль адміна (pool гілки `master` — `us-east-1_vyZTt69y0`):
