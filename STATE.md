@@ -163,7 +163,22 @@ aws cognito-idp admin-set-user-password --user-pool-id us-east-1_vyZTt69y0 --use
     `aws amplify get-app --app-id d1fmnqsgshywg2 --query "app.customRules"`.
     Копія — `docs/amplify-custom-rules.json`.
 
-14. **Тут Windows, а не bash.** `npx` — це `npx.ps1`, і політика виконання
+14. **Зняття ролі `Admins` незворотне з продукту.** Повернути її може лише той,
+    хто вже адмін, — а якщо адмінів не лишилось, то тільки AWS CLI. Так уже
+    сталося: `/admin/users` малювала «Зняти Admins» на кожному рядку, включно
+    з рядком того, хто залогінений, і панель замкнулася зсередини. Разом з нею
+    став неможливим і сід, бо контент теж пише лише група `Admins`. Тепер
+    `manage-admins` відхиляє зняття ролі із себе та зняття останнього адміна,
+    а екран не показує цих кнопок на власному рядку. Якщо все ж замкнулися:
+
+    ```powershell
+    aws cognito-idp admin-add-user-to-group --user-pool-id us-east-1_vyZTt69y0 --username <sub> --group-name Admins --region us-east-1
+    ```
+
+    Далі обов'язково **перезайти в акаунт**: група береться з ID-токена, і
+    старий токен її не містить.
+
+15. **Тут Windows, а не bash.** `npx` — це `npx.ps1`, і політика виконання
     PowerShell його блокує (`running scripts is disabled`): треба `npx.cmd`
     або прямо `.\node_modules\.bin\<tool>.cmd`. Політику виконання при цьому
     міняти НЕ треба — обмеження стосується лише `.ps1`-обгорток. Префікса

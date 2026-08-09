@@ -23,5 +23,9 @@ export const auth = defineAuth({
     },
   },
   groups: ['Admins'],
-  access: (allow) => [allow.resource(manageAdmins).to(['addUserToGroup', 'removeUserFromGroup'])],
+  // listUsersInGroup потрібен, щоб обробник міг відмовити у знятті ролі з
+  // ОСТАННЬОГО адміна — без цього права перевірка впала б з AccessDenied.
+  access: (allow) => [
+    allow.resource(manageAdmins).to(['addUserToGroup', 'removeUserFromGroup', 'listUsersInGroup']),
+  ],
 });

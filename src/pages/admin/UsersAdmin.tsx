@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { client } from '../../lib/amplify-client';
 import { unwrap } from '../../lib/unwrap';
+import { useAuth } from '../../context/AuthContext';
 
 type UserRow = {
   id: string;
@@ -14,6 +15,7 @@ type UserRow = {
 const GROUP_OPTIONS = ['EG', 'KG', 'UNASSIGNED'];
 
 export default function UsersAdmin() {
+  const { userId } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +47,23 @@ export default function UsersAdmin() {
     }
   }
 
-  async function togglePromote(user: UserRow, isCurrentlyAdmin: boolean) {
+  async function changeRole(user: UserRow, action: 'promote' | 'demote') {
+    // Зняття ролі незворотне з продукту: повернути її може лише той, хто вже
+    // адмін, або AWS CLI. Тому — підтвердження, а не тиха дія по кліку.
+    if (
+      action === 'demote' &&
+      !window.confirm(
+        `Зняти роль Admins із ${user.email}?\n\n` +
+          'Ця людина втратить доступ до адмін-панелі. Повернути роль зможе лише інший адміністратор.',
+      )
+    ) {
+      return;
+    }
+
     setBusyId(user.id);
     setError(null);
     try {
-      await unwrap(
-        client.mutations.promoteToAdmin({ userId: user.id, action: isCurrentlyAdmin ? 'demote' : 'promote' }),
-      );
+      await unwrap(client.mutations.promoteToAdmin({ userId: user.id, action }));
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не вдалося змінити роль.');
@@ -106,12 +118,29 @@ export default function UsersAdmin() {
                     <input defaultValue={u.course ?? ''} onBlur={(e) => saveField(u.id, 'course', e.target.value)} />
                   </td>
                   <td>
-                    <button className="btn ghost" disabled={busyId === u.id} onClick={() => togglePromote(u, false)}>
-                      Зробити Admins
-                    </button>{' '}
-                    <button className="btn ghost" disabled={busyId === u.id} onClick={() => togglePromote(u, true)}>
-                      Зняти Admins
-                    </button>
+                    {u.id === userId ? (
+                      // Власний рядок: зняти роль із себе означає замкнути
+                      // панель ізсередини — повернути її можна буде лише
+                      // через AWS CLI. Сервер це теж відхиляє.
+                      <span className="instr-note">це ви</span>
+                    ) : (
+                      <>
+                        <button
+                          className="btn ghost"
+                          disabled={busyId === u.id}
+                          onClick={() => changeRole(u, 'promote')}
+                        >
+                          Зробити Admins
+                        </button>{' '}
+                        <button
+                          className="btn ghost"
+                          disabled={busyId === u.id}
+                          onClick={() => changeRole(u, 'demote')}
+                        >
+                          Зняти Admins
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
