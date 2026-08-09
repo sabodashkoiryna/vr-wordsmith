@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import RequireAdmin from './components/RequireAdmin';
@@ -20,6 +21,20 @@ import ResourcesAdmin from './pages/admin/content/ResourcesAdmin';
 import DiagnosticsAdmin from './pages/admin/content/DiagnosticsAdmin';
 import UsersAdmin from './pages/admin/UsersAdmin';
 
+// Кабінет тягне за собою react-markdown. Він потрібен лише залогіненим і лише
+// в уроці, тож іде окремим чанком — інакше кожен відвідувач лендінгу
+// завантажував би парсер markdown, який йому нема де застосувати.
+const LearnPage = lazy(() => import('./features/learn/LearnPage'));
+const LessonPage = lazy(() => import('./features/learn/LessonPage'));
+
+function Loading() {
+  return (
+    <section className="container-content py-24">
+      <p className="text-ink-mute">Завантажуємо…</p>
+    </section>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -40,6 +55,26 @@ export default function App() {
               }
             />
             <Route path="/res" element={<ResourcesPage />} />
+            <Route
+              path="/learn"
+              element={
+                <RequireAuth>
+                  <Suspense fallback={<Loading />}>
+                    <LearnPage />
+                  </Suspense>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/learn/:moduleOrder/:lessonSlug"
+              element={
+                <RequireAuth>
+                  <Suspense fallback={<Loading />}>
+                    <LessonPage />
+                  </Suspense>
+                </RequireAuth>
+              }
+            />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignUpPage />} />
             <Route

@@ -7,12 +7,17 @@ import {
   signOut as amplifySignOut,
 } from 'aws-amplify/auth';
 import { client } from '../lib/amplify-client';
+import { unwrap } from '../lib/unwrap';
 
 type AuthState = {
   loading: boolean;
   userId: string | null;
   email: string | null;
+  fullName: string | null;
   isAdmin: boolean;
+  /** Профіль не створився. Не блокує роботу, але сертифікат вийде без імені,
+   *  тож екрани курсу показують це, а не мовчать. */
+  profileError: string | null;
 };
 
 type AuthContextValue = AuthState & {
@@ -23,16 +28,30 @@ type AuthContextValue = AuthState & {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// Створює UserProfile при першому вході (owner-запис із власним id=sub) —
-// зроблено "best effort": помилка тут не має ламати сам логін.
-async function ensureUserProfile(id: string, email: string, fullName: string) {
+/**
+ * Заводить UserProfile при першому вході (owner-запис із власним id = Cognito sub)
+ * і підтягує ПІБ, якщо він змінився в Cognito.
+ *
+ * Помилка тут навмисно НЕ ламає логін, але й не зникає: issue-certificate бере
+ * ПІБ саме звідси й підставляє «Учасник курсу», якщо запису немає. Раніше ця
+ * функція робила `create({...} as never)` всередині порожнього `catch` — тобто
+ * відхилений запис проходив тихо, а виявилося б це аж на видачі сертифіката,
+ * коли причину вже не відтворити. Тому: `unwrap`, жодного `as never`, і текст
+ * помилки повертається наверх.
+ */
+async function ensureUserProfile(id: string, email: string, fullName: string): Promise<string | null> {
   try {
-    const { data: existing } = await client.models.UserProfile.get({ id });
+    const existing = await unwrap(client.models.UserProfile.get({ id }));
     if (!existing) {
-      await client.models.UserProfile.create({ id, email, fullName, group: 'UNASSIGNED' } as never);
+      await unwrap(client.models.UserProfile.create({ id, email, fullName, group: 'UNASSIGNED' }));
+    } else if (fullName && existing.fullName !== fullName) {
+      await unwrap(client.models.UserProfile.update({ id, fullName }));
     }
-  } catch {
-    // ignore — профіль можна створити пізніше, це не має блокувати вхід
+    return null;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Не вдалося зберегти профіль';
+    console.error('[UserProfile]', message);
+    return message;
   }
 }
 
@@ -43,23 +62,45 @@ async function loadAuthState(): Promise<AuthState> {
     const groups = (session.tokens?.idToken?.payload['cognito:groups'] as string[]) ?? [];
     const email = (session.tokens?.idToken?.payload.email as string) ?? '';
     const fullName = (session.tokens?.idToken?.payload.name as string) ?? '';
-    void ensureUserProfile(user.userId, email, fullName);
     return {
       loading: false,
       userId: user.userId,
       email: email || null,
+      fullName: fullName || null,
       isAdmin: groups.includes('Admins'),
+      profileError: null,
     };
   } catch {
-    return { loading: false, userId: null, email: null, isAdmin: false };
+    return {
+      loading: false,
+      userId: null,
+      email: null,
+      fullName: null,
+      isAdmin: false,
+      profileError: null,
+    };
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ loading: true, userId: null, email: null, isAdmin: false });
+  const [state, setState] = useState<AuthState>({
+    loading: true,
+    userId: null,
+    email: null,
+    fullName: null,
+    isAdmin: false,
+    profileError: null,
+  });
 
+  // Профіль перевіряємо ПІСЛЯ того, як стан авторизації вже виставлено:
+  // інакше кожне завантаження сторінки залогіненим чекало б на зайвий запит,
+  // тримаючи гарди в стані «Перевірка доступу…».
   const refresh = useCallback(async () => {
-    setState(await loadAuthState());
+    const next = await loadAuthState();
+    setState(next);
+    if (!next.userId) return;
+    const profileError = await ensureUserProfile(next.userId, next.email ?? '', next.fullName ?? '');
+    if (profileError) setState((prev) => (prev.userId === next.userId ? { ...prev, profileError } : prev));
   }, []);
 
   useEffect(() => {

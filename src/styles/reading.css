@@ -1,0 +1,112 @@
+/* ============================================================================
+   Колонка тексту уроку.
+
+   Лекції довгі, і читати їх годину на темному тлі комфортно не всім — тому
+   колонка (і ТІЛЬКИ вона) має власну тему. Реалізовано перевизначенням
+   змінних на контейнері: у Tailwind v4 токени — звичайні CSS-змінні, тож
+   перемикач не чіпає ні React, ні решту оболонки, яка лишається темною.
+
+   Serif живе теж тільки тут. Саме його присутність на всьому інтерфейсі
+   робила PoC «академічно-застарілим», але для суцільного тексту він якраз
+   те, що треба.
+   ========================================================================= */
+
+@layer components {
+  .reading {
+    /* Темна — типова, збігається з рештою оболонки. */
+    --reading-bg: var(--color-space-800);
+    --reading-ink: var(--color-ink);
+    --reading-ink-soft: var(--color-ink-soft);
+    --reading-ink-mute: var(--color-ink-mute);
+    --reading-rule: var(--color-space-500);
+    --reading-link: var(--color-violet-300);
+    --reading-code-bg: var(--color-space-700);
+    --reading-quote-bar: var(--color-violet-400);
+
+    background: var(--reading-bg);
+    color: var(--reading-ink-soft);
+  }
+
+  /* Сепія — тепле паперове тло; контраст тексту до нього 9.7:1. */
+  .reading[data-reading-theme='sepia'] {
+    --reading-bg: #f3e9d6;
+    --reading-ink: #241d12;
+    --reading-ink-soft: #453a29;
+    --reading-ink-mute: #6d6049;
+    --reading-rule: #d9cbb0;
+    --reading-link: #7a4a12;
+    --reading-code-bg: #e6d9be;
+    --reading-quote-bar: #b08442;
+  }
+
+  /* Світла — для яскравого приміщення; контраст тексту 12.1:1. */
+  .reading[data-reading-theme='light'] {
+    --reading-bg: #fbfaff;
+    --reading-ink: #14121f;
+    --reading-ink-soft: #35314a;
+    --reading-ink-mute: #635c88;
+    --reading-rule: #e1ddf0;
+    --reading-link: #4a2ed6;
+    --reading-code-bg: #efecfa;
+    --reading-quote-bar: #8b6bff;
+  }
+
+  /* Плагін typography читає саме ці змінні — тож достатньо перевизначити їх
+     один раз, і всі три теми працюють без дублювання правил на кожен тег. */
+  .reading .prose {
+    --tw-prose-body: var(--reading-ink-soft);
+    --tw-prose-headings: var(--reading-ink);
+    --tw-prose-lead: var(--reading-ink-soft);
+    --tw-prose-links: var(--reading-link);
+    --tw-prose-bold: var(--reading-ink);
+    --tw-prose-counters: var(--reading-ink-mute);
+    --tw-prose-bullets: var(--reading-quote-bar);
+    --tw-prose-hr: var(--reading-rule);
+    --tw-prose-quotes: var(--reading-ink);
+    --tw-prose-quote-borders: var(--reading-quote-bar);
+    --tw-prose-captions: var(--reading-ink-mute);
+    --tw-prose-code: var(--reading-ink);
+    --tw-prose-pre-code: var(--reading-ink-soft);
+    --tw-prose-pre-bg: var(--reading-code-bg);
+    --tw-prose-th-borders: var(--reading-rule);
+    --tw-prose-td-borders: var(--reading-rule);
+
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    line-height: var(--leading-read);
+    max-width: 68ch;
+  }
+
+  /* Заголовки лишаються інтерфейсним сансом: усередині суцільного serif вони
+     працюють як навігація по тексту, і контраст гарнітур робить її помітною. */
+  .reading .prose :is(h1, h2, h3, h4) {
+    font-family: var(--font-sans);
+    letter-spacing: -0.01em;
+  }
+
+  .reading .prose :is(code, pre) {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+  }
+
+  .reading .prose :not(pre) > code {
+    background: var(--reading-code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: var(--radius-xs);
+  }
+
+  /* Кириличні лапки в `content` плагіна виглядають чужими — прибираємо. */
+  .reading .prose :is(code)::before,
+  .reading .prose :is(code)::after {
+    content: none;
+  }
+
+  /* Таблиці в лекціях вузькі, але на 375px усе одно не влазять — хай
+     прокручуються всередині себе, а не розсовують сторінку. */
+  .reading .prose table {
+    display: block;
+    overflow-x: auto;
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+  }
+}

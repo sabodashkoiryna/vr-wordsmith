@@ -23,5 +23,6 @@
 @import './base.css';
 @import './motion.css';
 @import './hero.css';
+@import './reading.css';
 @import './legacy.css' layer(legacy);
 @import './legacy-bridge.css';

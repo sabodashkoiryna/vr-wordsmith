@@ -1,0 +1,128 @@
+import { useCallback, useEffect, useState } from 'react';
+import { client } from '../../lib/amplify-client';
+import { unwrap } from '../../lib/unwrap';
+import { useAuth } from '../../context/AuthContext';
+
+export type LessonNode = {
+  id: string;
+  moduleId: string;
+  order: number;
+  slug: string;
+  title: string;
+  kind: 'text' | 'video' | 'quiz' | 'assignment';
+  summary: string | null;
+  durationMinutes: number | null;
+  completed: boolean;
+};
+
+export type ModuleNode = {
+  id: string;
+  order: number;
+  code: string;
+  title: string;
+  summary: string | null;
+  component: string | null;
+  quizPoints: number;
+  assignmentPoints: number;
+  lessons: LessonNode[];
+  completedCount: number;
+};
+
+export type CourseTree = {
+  modules: ModuleNode[];
+  lessonCount: number;
+  completedCount: number;
+  /** Бали з кешу CourseEnrollment. До першого оцінювання запису НЕМАЄ —
+   *  це не помилка, а нормальний стан нового учасника. */
+  points: { quiz: number; assignment: number; total: number } | null;
+};
+
+const EMPTY: CourseTree = { modules: [], lessonCount: 0, completedCount: 0, points: null };
+
+/**
+ * Дерево курсу для кабінету: модулі → уроки + відмітки про проходження.
+ *
+ * `CourseEnrollment` свідомо не є обов'язковим. Його створюють лише грейдинг-
+ * Lambda при першому оцінюванні, тож у щойно зареєстрованого учасника запису
+ * не існує взагалі. Екран, який би на нього чекав, для новачка не завантажився
+ * б ніколи — тому бали тут `null`, а не `0`, і вирішує це вже інтерфейс.
+ */
+export function useCourseTree() {
+  const { userId } = useAuth();
+  const [tree, setTree] = useState<CourseTree | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!userId) return;
+    try {
+      setError(null);
+      const [modules, lessons, progress, enrollments] = await Promise.all([
+        unwrap(client.models.Module.list({ limit: 200 })),
+        unwrap(client.models.Lesson.list({ limit: 500 })),
+        unwrap(client.models.LessonProgress.list({ limit: 500 })),
+        unwrap(client.models.CourseEnrollment.list({ limit: 2 })),
+      ]);
+
+      const done = new Set(
+        progress.filter((p) => p.status === 'completed').map((p) => p.lessonId),
+      );
+
+      const byModule = new Map<string, LessonNode[]>();
+      for (const l of lessons) {
+        const node: LessonNode = {
+          id: l.id,
+          moduleId: l.moduleId,
+          order: l.order,
+          slug: l.slug,
+          title: l.title,
+          kind: (l.kind ?? 'text') as LessonNode['kind'],
+          summary: l.summary ?? null,
+          durationMinutes: l.durationMinutes ?? null,
+          completed: done.has(l.id),
+        };
+        const list = byModule.get(l.moduleId);
+        if (list) list.push(node);
+        else byModule.set(l.moduleId, [node]);
+      }
+      for (const list of byModule.values()) list.sort((a, b) => a.order - b.order);
+
+      const moduleNodes: ModuleNode[] = modules
+        .filter((m) => m.isPublished !== false)
+        .sort((a, b) => a.order - b.order)
+        .map((m) => {
+          const own = byModule.get(m.id) ?? [];
+          return {
+            id: m.id,
+            order: m.order,
+            code: m.code,
+            title: m.title,
+            summary: m.summary ?? null,
+            component: m.component ?? null,
+            quizPoints: m.quizPoints ?? 8,
+            assignmentPoints: m.assignmentPoints ?? 12,
+            lessons: own,
+            completedCount: own.filter((l) => l.completed).length,
+          };
+        });
+
+      const e = enrollments[0];
+      setTree({
+        modules: moduleNodes,
+        lessonCount: moduleNodes.reduce((n, m) => n + m.lessons.length, 0),
+        completedCount: moduleNodes.reduce((n, m) => n + m.completedCount, 0),
+        points: e
+          ? { quiz: e.quizPoints, assignment: e.assignmentPoints, total: e.totalPoints }
+          : null,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не вдалося завантажити курс');
+      setTree(EMPTY);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { tree, error, reload: load };
+}
