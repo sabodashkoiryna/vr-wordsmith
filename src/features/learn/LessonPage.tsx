@@ -8,7 +8,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useCourseTree, type ModuleNode } from './useCourseTree';
 import { findLesson, flatten, KIND_LABEL, lessonHref } from './lessonMeta';
 import { READING_THEMES, useReadingTheme } from './readingTheme';
+import { markLessonComplete } from './progress';
 import LessonContent from './LessonContent';
+import QuizRunner from './QuizRunner';
 
 type LessonBody = { contentMarkdown: string | null; videoUrl: string | null };
 
@@ -108,28 +110,7 @@ export default function LessonPage() {
     setSaving(true);
     setSaveError(null);
     try {
-      const existing = await unwrap(
-        client.models.LessonProgress.list({
-          filter: { lessonId: { eq: found.lesson.id } },
-          limit: 1,
-        }),
-      );
-      const payload = {
-        status: 'completed' as const,
-        completedAt: new Date().toISOString(),
-      };
-      if (existing[0]) {
-        await unwrap(client.models.LessonProgress.update({ id: existing[0].id, ...payload }));
-      } else {
-        await unwrap(
-          client.models.LessonProgress.create({
-            studentId: userId,
-            lessonId: found.lesson.id,
-            moduleId: found.module.id,
-            ...payload,
-          }),
-        );
-      }
+      await markLessonComplete(userId, found.lesson.id, found.module.id);
       await reload();
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Не вдалося зберегти прогрес');
@@ -171,7 +152,6 @@ export default function LessonPage() {
   const flat = flatten(tree.modules);
   const prev = index > 0 ? flat[index - 1] : null;
   const next = index < flat.length - 1 ? flat[index + 1] : null;
-  const notYetBuilt = lesson.kind === 'quiz' || lesson.kind === 'assignment';
 
   return (
     <div className="container-wide grid gap-8 py-10 lg:grid-cols-[280px_1fr] lg:py-14">
@@ -269,11 +249,16 @@ export default function LessonPage() {
           )}
         </div>
 
-        {notYetBuilt && (
+        {lesson.kind === 'quiz' && (
+          <div className="mt-7">
+            <QuizRunner lessonId={lesson.id} moduleId={module.id} onCompleted={reload} />
+          </div>
+        )}
+
+        {lesson.kind === 'assignment' && (
           <p className="mt-5 rounded-[var(--radius-sm)] bg-space-700 p-4 text-sm text-ink-soft">
-            {lesson.kind === 'quiz'
-              ? 'Проходження тесту з’явиться тут найближчим оновленням. Поки що ознайомтеся з умовами вище.'
-              : 'Форма здачі практичної з’явиться тут найближчим оновленням. Поки що ознайомтеся із завданням і критеріями вище.'}
+            Форма здачі практичної з’явиться тут найближчим оновленням. Поки що ознайомтеся
+            із завданням і критеріями вище.
           </p>
         )}
 

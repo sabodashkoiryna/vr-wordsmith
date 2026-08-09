@@ -213,6 +213,8 @@ async function main() {
           block: q.block ?? null,
           prompt: q.prompt,
           weight: 1,
+          // Виводимо з самого контенту, щоб ознака не могла розійтися з ключем.
+          isMultiple: q.correct.length > 1,
         }),
       );
 
