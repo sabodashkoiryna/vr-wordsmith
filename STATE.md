@@ -33,13 +33,22 @@ Tailwind v4, AWS Amplify Gen2 (Cognito, AppSync/DynamoDB, S3, Lambda).
 - Етап 3 — лендінг (односторінковий, з якорями)
 - Етап 4 — галерея `/gallery` (поки на мок-даних, форма збігається з `GalleryItem`)
 - Етап 5 — **бекенд MVP**: схема, 3 Lambda, сід, тест доступу. Перевірено в sandbox.
+- Етап 5а — бекенд **задеплоєно на `master`** (9 серпня). Таблиці старих моделей
+  (`MatrixRow`, `ExperimentStage`, `TimelineEntry`, `EvidenceTile`,
+  `ProjectSubmission`, `ModuleProgress`) видалено, дані лежать у
+  `../backup-20260809/`. Таблицю `Module` не перестворювало — 5 рядків PoC живі,
+  сід оновить їх на місці, бо коди збігаються (`МОДУЛЬ 1…5`). Адмін
+  `iryna.v.sabodashko@lpnu.ua` у групі `Admins` уцілів.
+- Екрани PoC на видалених моделях (`MatrixPage`, `ExperimentPage`, `MatrixAdmin`,
+  `ExperimentAdmin`, `ResultsAdmin`) прибрано разом з маршрутами — вони три білди
+  поспіль валили фронтенд. Лишились на гілці `poc`.
 
 ## Далі
 
-1. **Деплой бекенду на `master`.** Перестворить таблиці; старі моделі
-   (`MatrixRow`, `ExperimentStage`, `TimelineEntry`, `EvidenceTile`,
-   `ProjectSubmission`, `ModuleProgress`) зникнуть. Дані експортовано в
-   `../backup-20260809/`. Після деплою — запустити сід і `verify-access`.
+1. **Засіяти базу `master` і прогнати `verify-access`.** База порожня:
+   `Course=0`, `Lesson=0`, `Quiz=0`, `GalleryItem=0`. Виводи гілки лежать у
+   `amplify_outputs.master.json` (у .gitignore). Для `verify-access` потрібен
+   ще й тестовий студент — у пулі `master` його нема, лише адмін.
 2. **Підключити лендінг і галерею до бази** (`usePublicList` уже написано,
    `src/lib/usePublicList.ts`). Зараз програма курсу в `src/content/landing.ts`,
    галерея в `src/features/gallery/galleryData.ts` — обидва мають читатися з
@@ -60,7 +69,8 @@ npx tsc -p amplify --noEmit      # тайпчек бекенду ($amplify/env �
 npx ampx sandbox --once --identifier <name>   # ізольований бекенд для перевірок
 npx ampx sandbox delete --identifier <name>   # прибрати його
 
-npx ampx generate outputs --app-id d1fmnqsgshywg2 --branch master --out-dir <dir>
+# AWS_REGION обов'язковий, інакше скаже "Stack does not exist" (пастка 10)
+AWS_REGION=us-east-1 npx ampx generate outputs --app-id d1fmnqsgshywg2 --branch master --out-dir <dir>
 
 ADMIN_EMAIL=... ADMIN_PASSWORD=... npx tsx scripts/seed-course.ts <outputs.json>
 STUDENT_EMAIL=... STUDENT_PASSWORD=... ADMIN_EMAIL=... ADMIN_PASSWORD=... \
@@ -103,6 +113,16 @@ STUDENT_EMAIL=... STUDENT_PASSWORD=... ADMIN_EMAIL=... ADMIN_PASSWORD=... \
 8. **Інлайновий стиль не перекривається утилітами.** Заливка головної кнопки —
    клас `.btn-aurora`, а не `style={{background}}`, інакше кнопку неможливо
    перефарбувати під конкретний фон.
+
+9. **Бекенд деплоїться сам, фронтенд може при цьому падати — і це тихо.** Кожен
+   пуш у гілку запускає `ampx pipeline-deploy` ПЕРЕД `npm run build`. Тобто
+   бекенд уже перебудовано, а сайт лишається на старому бандлі, який звертається
+   до моделей, яких більше нема. Статус гілки в Amplify показує FAILED, але
+   інфраструктура при цьому вже змінена. Так сталося з job 16, 17 і 18.
+
+10. **`ampx` мовчки бере не той регіон.** Без `AWS_REGION=us-east-1`
+    `npx ampx generate outputs` каже `Stack does not exist` для стека, який
+    існує. Це помилка регіону, а не відсутній стек.
 
 ## Структура
 

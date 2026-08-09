@@ -7,6 +7,7 @@ import ScrollToTop from './components/ScrollToTop';
 import Footer from './components/Footer';
 import LandingPage from './features/landing/LandingPage';
 import GalleryPage from './features/gallery/GalleryPage';
+import NotFoundPage from './features/NotFoundPage';
 import ModulesPage from './pages/ModulesPage';
 import DiagnosticsPage from './pages/DiagnosticsPage';
 import ResourcesPage from './pages/ResourcesPage';
@@ -55,6 +56,7 @@ export default function App() {
               <Route path="diagnostics" element={<DiagnosticsAdmin />} />
               <Route path="users" element={<UsersAdmin />} />
             </Route>
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </main>
         <Footer />
