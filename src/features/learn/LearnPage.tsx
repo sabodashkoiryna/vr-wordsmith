@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import Button from '../../ui/Button';
 import ProgressBar from '../../ui/ProgressBar';
 import { Reveal } from '../../ui/motion/Reveal';
 import { useAuth } from '../../context/AuthContext';
@@ -164,29 +163,56 @@ export default function LearnPage() {
                 <div className="font-mono text-2xs tracking-widest text-ink-mute">БАЛИ</div>
                 <div className="mt-2 font-display text-2xl text-ink">
                   {tree.points?.total ?? 0}
-                  <span className="text-ink-mute"> / 100</span>
+                  <span className="text-ink-mute"> / {tree.totalPoints}</span>
                 </div>
                 <ProgressBar
                   value={tree.points?.total ?? 0}
-                  max={100}
+                  max={tree.totalPoints}
                   label="Набрані бали"
                   tone="gold"
                   className="mt-4"
                 />
                 <p className="mt-3 text-sm text-ink-mute">
-                  Сертифікат — від 60 балів. Тести оцінюються автоматично, практичні —
-                  викладачем.
+                  Сертифікат — від {tree.passingPoints} балів. Тести оцінюються автоматично,
+                  проєкт — викладачем.
                 </p>
               </div>
             </div>
 
-            {next && (
-              <div className="mt-8">
-                <Button as={Link} to={lessonHref(next.module, next.lesson)} size="lg">
-                  {started ? 'Продовжити' : 'Почати курс'}
-                </Button>
-                <p className="mt-3 text-sm text-ink-mute">
-                  {next.module.code} · {next.lesson.title}
+            {next ? (
+              /* Картка, а не самотня кнопка: «Продовжити» без назви уроку не
+                 каже, куди веде, і людина натискає наосліп. Тут одразу видно
+                 модуль, урок і скільки він триває. */
+              <Link
+                to={lessonHref(next.module, next.lesson)}
+                className="group mt-8 flex flex-col gap-5 rounded-[var(--radius-lg)] bg-space-800 p-6 no-underline transition-colors hover:bg-space-700 sm:flex-row sm:items-center sm:justify-between md:p-7 lg:max-w-3xl"
+              >
+                <div className="min-w-0">
+                  <div className="font-mono text-2xs tracking-widest text-violet-300">
+                    {started ? 'ПРОДОВЖИТИ З МІСЦЯ' : 'ПОЧАТИ КУРС'}
+                  </div>
+                  <div className="mt-2.5 text-lg text-ink">{next.lesson.title}</div>
+                  <div className="mt-1.5 font-mono text-2xs text-ink-mute">
+                    {next.module.code} · {KIND_LABEL[next.lesson.kind]}
+                    {next.lesson.durationMinutes ? ` · ${next.lesson.durationMinutes} хв` : ''}
+                  </div>
+                </div>
+                <span
+                  aria-hidden="true"
+                  className="btn-aurora inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-3.5 font-mono text-xs tracking-[0.04em] whitespace-nowrap text-white transition-[filter] group-hover:brightness-115"
+                >
+                  {started ? 'Продовжити' : 'Почати'} →
+                </span>
+              </Link>
+            ) : (
+              <div className="mt-8 rounded-[var(--radius-lg)] bg-space-800 p-6 md:p-7 lg:max-w-3xl">
+                <div className="font-mono text-2xs tracking-widest text-success">
+                  УСІ УРОКИ ПРОЙДЕНО
+                </div>
+                <p className="mt-2.5 text-ink-soft">
+                  {(tree.points?.total ?? 0) >= tree.passingPoints
+                    ? 'Порогу сертифіката досягнуто.'
+                    : `Лишилось набрати ${tree.passingPoints - (tree.points?.total ?? 0)} балів до сертифіката.`}
                 </p>
               </div>
             )}

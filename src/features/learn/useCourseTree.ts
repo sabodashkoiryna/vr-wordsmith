@@ -35,9 +35,21 @@ export type CourseTree = {
   /** Бали з кешу CourseEnrollment. До першого оцінювання запису НЕМАЄ —
    *  це не помилка, а нормальний стан нового учасника. */
   points: { quiz: number; assignment: number; total: number } | null;
+  /** Максимум і поріг сертифіката беруться з Course, а не з констант у
+   *  компонентах: правила оцінювання змінюються, і кожне число, вписане в
+   *  розмітку, довелося б потім вишукувати по всьому дереву. */
+  totalPoints: number;
+  passingPoints: number;
 };
 
-const EMPTY: CourseTree = { modules: [], lessonCount: 0, completedCount: 0, points: null };
+const EMPTY: CourseTree = {
+  modules: [],
+  lessonCount: 0,
+  completedCount: 0,
+  points: null,
+  totalPoints: 100,
+  passingPoints: 60,
+};
 
 /**
  * Дерево курсу для кабінету: модулі → уроки + відмітки про проходження.
@@ -56,11 +68,12 @@ export function useCourseTree() {
     if (!userId) return;
     try {
       setError(null);
-      const [modules, lessons, progress, enrollments] = await Promise.all([
+      const [modules, lessons, progress, enrollments, courses] = await Promise.all([
         unwrap(client.models.Module.list({ limit: 200 })),
         unwrap(client.models.Lesson.list({ limit: 500 })),
         unwrap(client.models.LessonProgress.list({ limit: 500 })),
         unwrap(client.models.CourseEnrollment.list({ limit: 2 })),
+        unwrap(client.models.Course.list({ limit: 2 })),
       ]);
 
       const done = new Set(
@@ -106,6 +119,7 @@ export function useCourseTree() {
         });
 
       const e = enrollments[0];
+      const course = courses[0];
       setTree({
         modules: moduleNodes,
         lessonCount: moduleNodes.reduce((n, m) => n + m.lessons.length, 0),
@@ -113,6 +127,8 @@ export function useCourseTree() {
         points: e
           ? { quiz: e.quizPoints, assignment: e.assignmentPoints, total: e.totalPoints }
           : null,
+        totalPoints: course?.totalPoints ?? EMPTY.totalPoints,
+        passingPoints: course?.passingPoints ?? EMPTY.passingPoints,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не вдалося завантажити курс');
