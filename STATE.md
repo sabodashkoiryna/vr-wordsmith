@@ -8,7 +8,7 @@
 мови та літератури про доцільне застосування VR/AR. React 19 + Vite 8 +
 Tailwind v4, AWS Amplify Gen2 (Cognito, AppSync/DynamoDB, S3, Lambda).
 
-Повний план: `C:\Users\Iryna\.claude\plans\happy-beaming-sunset.md`
+Повний план (архітектура, рішення, ризики): [`docs/PLAN.md`](docs/PLAN.md)
 
 ## Розгорнуте
 
