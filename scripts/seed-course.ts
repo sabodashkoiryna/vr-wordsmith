@@ -278,19 +278,34 @@ async function main() {
   }
 
   // ── 3d. Курсовий проєкт ─────────────────────────────────────────────────
-  //  Один на весь курс і поза модулями. Помодульні практичні, що були тут
-  //  раніше, прибрано разом з їхніми уроками — старі рядки Assignment
-  //  видаляємо явно, бо звірка за slug'ом їх не бачить: у них slug порожній.
-  const staleAssignments = existingAssignments.filter((x) => x.slug !== courseProject.slug);
+  //  Один на весь курс і поза модулями.
+  //
+  //  Проєкт ПРИСВОЮЄМО, а не перестворюємо. Раніше тут стояла звірка лише за
+  //  slug'ом, і рядок без нього щоразу потрапляв у «застарілі»: сід видаляв
+  //  проєкт і створював новий з іншим id. Поки подань немає, це непомітно —
+  //  а з першим поданням студентська робота посилалася б на видалене
+  //  завдання. Тому курсовим проєктом вважається будь-яке завдання поза
+  //  модулем: воно може бути лише одне.
+  const isProjectRow = (x: { slug: string | null; moduleId: string | null }) =>
+    x.slug === courseProject.slug || (!x.slug && !x.moduleId);
+
+  const submissions = await listAll<{ assignmentId: string }>(client.models.AssignmentSubmission);
+  const withWork = new Set(submissions.map((s) => s.assignmentId));
+
+  const staleAssignments = existingAssignments.filter((x) => !isProjectRow(x));
   for (const a of staleAssignments) {
+    // Завдання, за яким уже щось здали, не видаляємо НІКОЛИ: це осиротило б
+    // подання й оцінку. Краще лишити зайвий рядок і сказати про нього вголос.
+    if (withWork.has(a.id)) {
+      console.warn(`  ! Assignment ${a.id} має подання — не чіпаю. Приберіть вручну після перенесення робіт.`);
+      continue;
+    }
     const itsCriteria = (
       await listAll<{ id: string; assignmentId: string }>(client.models.RubricCriterion)
     ).filter((c) => c.assignmentId === a.id);
     for (const c of itsCriteria) await client.models.RubricCriterion.delete({ id: c.id });
     await must(`Assignment.delete ${a.id}`, client.models.Assignment.delete({ id: a.id }));
-  }
-  if (staleAssignments.length) {
-    console.log(`✓ Прибрано помодульних практичних: ${staleAssignments.length}`);
+    console.log(`✓ Прибрано застаріле завдання ${a.id}`);
   }
 
   const projectPayload = {
@@ -303,7 +318,9 @@ async function main() {
     allowExternalLink: courseProject.allowExternalLink,
     maxFileSizeMb: 50,
   };
-  const hitProject = existingAssignments.find((x) => x.slug === courseProject.slug);
+  // Та сама ознака, що й вище: інакше рядок, який ми щойно вирішили НЕ
+  // видаляти, лишився б непоміченим — і поруч зʼявився б другий проєкт.
+  const hitProject = existingAssignments.find(isProjectRow);
   const projectRow = hitProject
     ? await must('Project.update', client.models.Assignment.update({ id: hitProject.id, ...projectPayload }))
     : await must('Project.create', client.models.Assignment.create(projectPayload));
