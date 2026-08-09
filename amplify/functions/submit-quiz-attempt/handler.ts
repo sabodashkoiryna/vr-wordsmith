@@ -19,7 +19,12 @@ export const handler: Schema['submitQuizAttempt']['functionHandler'] = async (ev
   if (!studentId) throw new Error('Не автентифіковано');
 
   const { quizId } = event.arguments;
-  const submitted: Submitted[] = JSON.parse(event.arguments.answers as string);
+  // AWSJSON-АРГУМЕНТ доходить до Lambda вже розпарсеним об'єктом — на відміну
+  // від AWSJSON-ПОЛЯ моделі, яке зберігається рядком. Ця асиметрія неочевидна,
+  // тож приймаємо обидва варіанти й не залежимо від неї.
+  const rawAnswers = event.arguments.answers as unknown;
+  const submitted: Submitted[] =
+    typeof rawAnswers === 'string' ? JSON.parse(rawAnswers) : (rawAnswers as Submitted[]);
 
   const { data: quiz } = await data.models.Quiz.get({ id: quizId });
   if (!quiz) throw new Error('Тест не знайдено');

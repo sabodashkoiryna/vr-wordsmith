@@ -12,7 +12,10 @@ const PASSING_POINTS = 60;
 
 export const handler: Schema['gradeAssignment']['functionHandler'] = async (event) => {
   const { submissionId, comment, returnForRevision } = event.arguments;
-  const scores: Record<string, number> = JSON.parse(event.arguments.rubricScores as string);
+  // Див. коментар у submit-quiz-attempt: AWSJSON-аргумент приходить об'єктом.
+  const rawScores = event.arguments.rubricScores as unknown;
+  const scores: Record<string, number> =
+    typeof rawScores === 'string' ? JSON.parse(rawScores) : (rawScores as Record<string, number>);
   const graderName =
     event.identity && 'claims' in event.identity
       ? ((event.identity.claims as Record<string, unknown>)?.email as string) ?? 'admin'
