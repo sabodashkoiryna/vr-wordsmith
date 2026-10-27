@@ -28,8 +28,8 @@ export const handler: Schema['issueCertificate']['functionHandler'] = async (eve
   // той запис — кеш, який оновлюють дві різні Lambda і який теоретично
   // може розійтися при одночасному записі.
   const [{ data: attempts }, { data: grades }] = await Promise.all([
-    data.models.QuizAttempt.list({ filter: { studentId: { eq: studentId } }, limit: 500 }),
-    data.models.AssignmentGrade.list({ filter: { studentId: { eq: studentId } }, limit: 500 }),
+    data.models.QuizAttempt.listQuizAttemptByStudentIdAndQuizId({ studentId }, { limit: 500 }),
+    data.models.AssignmentGrade.listAssignmentGradeByStudentId({ studentId }, { limit: 500 }),
   ]);
   const bestByQuiz = new Map<string, number>();
   for (const a of attempts) {
@@ -51,9 +51,10 @@ export const handler: Schema['issueCertificate']['functionHandler'] = async (eve
     };
   }
 
-  const { data: existing } = await data.models.Certificate.list({
-    filter: { studentId: { eq: studentId } },
-    limit: 5,
+  // ЧЕРЕЗ ІНДЕКС: пропущений наявний сертифікат означав би ДРУГИЙ виданий
+  // документ тій самій людині, з іншим номером.
+  const { data: existing } = await data.models.Certificate.listCertificateByStudentId({
+    studentId,
   });
   const active = existing.find((c) => !c.revokedAt);
   if (active) {
@@ -89,9 +90,8 @@ export const handler: Schema['issueCertificate']['functionHandler'] = async (eve
     issuedAt: now.toISOString(),
   });
 
-  const { data: enrollments } = await data.models.CourseEnrollment.list({
-    filter: { studentId: { eq: studentId } },
-    limit: 1,
+  const { data: enrollments } = await data.models.CourseEnrollment.listCourseEnrollmentByStudentId({
+    studentId,
   });
   if (enrollments[0]) {
     await data.models.CourseEnrollment.update({ id: enrollments[0].id, status: 'certified' });

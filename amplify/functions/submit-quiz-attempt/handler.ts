@@ -31,16 +31,19 @@ export const handler: Schema['submitQuizAttempt']['functionHandler'] = async (ev
 
   const maxAttempts = quiz.maxAttempts ?? 2;
 
-  const { data: prior } = await data.models.QuizAttempt.list({
-    filter: { studentId: { eq: studentId }, quizId: { eq: quizId } },
-    limit: 50,
+  // ЧЕРЕЗ ІНДЕКС. З filter + limit DynamoDB переглядає limit рядків і лише
+  // потім фільтрує: щойно в таблиці побільшає спроб, ніж limit, цей запит
+  // почав би повертати порожньо — і ліміт у дві спроби зник би зовсім.
+  const { data: prior } = await data.models.QuizAttempt.listQuizAttemptByStudentIdAndQuizId({
+    studentId,
+    quizId: { eq: quizId },
   });
   if (prior.length >= maxAttempts) throw new Error('Вичерпано кількість спроб');
   const attemptNumber = prior.length + 1;
 
   const [{ data: questions }, { data: keys }] = await Promise.all([
-    data.models.QuizQuestion.list({ filter: { quizId: { eq: quizId } }, limit: 200 }),
-    data.models.QuizAnswerKey.list({ filter: { quizId: { eq: quizId } }, limit: 200 }),
+    data.models.QuizQuestion.listQuizQuestionByQuizIdAndOrder({ quizId }, { limit: 200 }),
+    data.models.QuizAnswerKey.listQuizAnswerKeyByQuizId({ quizId }, { limit: 200 }),
   ]);
   const keyByQuestion = new Map(keys.map((k) => [k.questionId, k]));
 
@@ -109,8 +112,8 @@ export const handler: Schema['submitQuizAttempt']['functionHandler'] = async (ev
 /** Перераховує агрегат із першоджерел: краща спроба на кожен тест + оцінки практичних. */
 async function recomputeEnrollment(studentId: string): Promise<number> {
   const [{ data: attempts }, { data: grades }] = await Promise.all([
-    data.models.QuizAttempt.list({ filter: { studentId: { eq: studentId } }, limit: 500 }),
-    data.models.AssignmentGrade.list({ filter: { studentId: { eq: studentId } }, limit: 500 }),
+    data.models.QuizAttempt.listQuizAttemptByStudentIdAndQuizId({ studentId }, { limit: 500 }),
+    data.models.AssignmentGrade.listAssignmentGradeByStudentId({ studentId }, { limit: 500 }),
   ]);
 
   const bestByQuiz = new Map<string, number>();
@@ -121,9 +124,8 @@ async function recomputeEnrollment(studentId: string): Promise<number> {
   const assignmentPoints = grades.reduce((s, g) => s + (g.pointsAwarded ?? 0), 0);
   const totalPoints = Math.round((quizPoints + assignmentPoints) * 100) / 100;
 
-  const { data: existing } = await data.models.CourseEnrollment.list({
-    filter: { studentId: { eq: studentId } },
-    limit: 1,
+  const { data: existing } = await data.models.CourseEnrollment.listCourseEnrollmentByStudentId({
+    studentId,
   });
   const payload = {
     studentId,

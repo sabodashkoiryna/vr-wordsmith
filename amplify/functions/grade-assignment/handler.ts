@@ -33,10 +33,10 @@ export const handler: Schema['gradeAssignment']['functionHandler'] = async (even
   const { data: assignment } = await data.models.Assignment.get({ id: submission.assignmentId });
   if (!assignment) throw new Error('Завдання не знайдено');
 
-  const { data: criteria } = await data.models.RubricCriterion.list({
-    filter: { assignmentId: { eq: submission.assignmentId } },
-    limit: 100,
-  });
+  const { data: criteria } = await data.models.RubricCriterion.listRubricCriterionByAssignmentIdAndOrder(
+    { assignmentId: submission.assignmentId },
+    { limit: 100 },
+  );
 
   // Кожен бал обрізаємо по maxPoints критерію: адмін не має змоги поставити
   // 5 за критерій з максимумом 3 і тим зламати нормалізацію.
@@ -51,9 +51,10 @@ export const handler: Schema['gradeAssignment']['functionHandler'] = async (even
   const pointsAwarded =
     rubricMax > 0 ? Math.round((rubricRawTotal / rubricMax) * assignment.maxPoints * 100) / 100 : 0;
 
-  const { data: existing } = await data.models.AssignmentGrade.list({
-    filter: { submissionId: { eq: submissionId } },
-    limit: 1,
+  // ЧЕРЕЗ ІНДЕКС: інакше повторне оцінювання створювало б ДРУГИЙ запис
+  // оцінки, а recomputeEnrollment підсумовує їх усі — бали подвоїлися б.
+  const { data: existing } = await data.models.AssignmentGrade.listAssignmentGradeBySubmissionId({
+    submissionId,
   });
 
   const payload = {
@@ -92,8 +93,8 @@ export const handler: Schema['gradeAssignment']['functionHandler'] = async (even
 
 async function recomputeEnrollment(studentId: string): Promise<number> {
   const [{ data: attempts }, { data: grades }] = await Promise.all([
-    data.models.QuizAttempt.list({ filter: { studentId: { eq: studentId } }, limit: 500 }),
-    data.models.AssignmentGrade.list({ filter: { studentId: { eq: studentId } }, limit: 500 }),
+    data.models.QuizAttempt.listQuizAttemptByStudentIdAndQuizId({ studentId }, { limit: 500 }),
+    data.models.AssignmentGrade.listAssignmentGradeByStudentId({ studentId }, { limit: 500 }),
   ]);
 
   const bestByQuiz = new Map<string, number>();
@@ -104,9 +105,8 @@ async function recomputeEnrollment(studentId: string): Promise<number> {
   const assignmentPoints = grades.reduce((s, g) => s + (g.pointsAwarded ?? 0), 0);
   const totalPoints = Math.round((quizPoints + assignmentPoints) * 100) / 100;
 
-  const { data: existing } = await data.models.CourseEnrollment.list({
-    filter: { studentId: { eq: studentId } },
-    limit: 1,
+  const { data: existing } = await data.models.CourseEnrollment.listCourseEnrollmentByStudentId({
+    studentId,
   });
   const payload = {
     studentId,

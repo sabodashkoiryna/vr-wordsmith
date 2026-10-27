@@ -92,7 +92,15 @@ export default function QuizRunner({
       const [questions, options, attempts] = await Promise.all([
         unwrap(client.models.QuizQuestion.list({ filter: { quizId: { eq: q.id } }, limit: 200 })),
         unwrap(client.models.QuizOption.list({ filter: { quizId: { eq: q.id } }, limit: 500 })),
-        unwrap(client.models.QuizAttempt.list({ filter: { quizId: { eq: q.id } }, limit: 50 })),
+        // Через індекс: filter + limit дивиться limit рядків і лише потім
+        // фільтрує, тож зі зростанням таблиці спроби перестали б знаходитись,
+        // і екран показував би «спроб 0» людині, яка вже здавала.
+        unwrap(
+          client.models.QuizAttempt.listQuizAttemptByStudentIdAndQuizId({
+            studentId: userId ?? '',
+            quizId: { eq: q.id },
+          }),
+        ),
       ]);
 
       const byQuestion = new Map<string, Option[]>();
@@ -127,7 +135,7 @@ export default function QuizRunner({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не вдалося завантажити тест');
     }
-  }, [lessonId]);
+  }, [lessonId, userId]);
 
   useEffect(() => {
     void load();
