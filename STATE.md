@@ -92,6 +92,12 @@ $env:STUDENT_EMAIL = "<email>"; $env:STUDENT_PASSWORD = Read-Host "Пароль 
 .\node_modules\.bin\tsx.cmd scripts/verify-access.ts amplify_outputs.master.json
 $env:STUDENT_PASSWORD = $null; $env:ADMIN_PASSWORD = $null
 
+# Наскрізна перевірка: контент → доступ → тест → проєкт → оцінювання → сертифікат
+# ЗАПИСУЄ дані (спроби, подання, оцінки) — лише на пісочниці. Потрібен ЗВИЧАЙНИЙ студент без Admins.
+$env:ADMIN_EMAIL = "<email>"; $env:ADMIN_PASSWORD = Read-Host "Пароль адміна"
+$env:STUDENT_EMAIL = "<email>"; $env:STUDENT_PASSWORD = Read-Host "Пароль студента"
+.\node_modules\.bin\tsx.cmd scripts/verify-e2e.ts amplify_outputs.master.json
+
 # Гостьова половина матриці — БЕЗ облікових даних, можна ганяти після кожного деплою
 .\node_modules\.bin\tsx.cmd scripts/verify-guest-access.ts amplify_outputs.master.json
 ```
