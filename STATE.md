@@ -84,6 +84,10 @@ $env:AWS_REGION = "us-east-1"
 npx.cmd ampx generate outputs --app-id d1fmnqsgshywg2 --branch master --out-dir <dir>
 
 # Пароль через Read-Host, щоб не осідав в історії команд; наприкінці — очистити.
+# Read-Host БЕЗ -AsSecureString друкує пароль на екран. Для справжніх паролів:
+#   $s = Read-Host "Пароль" -AsSecureString
+#   $env:ADMIN_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+#     [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
 $env:ADMIN_EMAIL = "<email>"; $env:ADMIN_PASSWORD = Read-Host "Пароль адміна"
 .\node_modules\.bin\tsx.cmd scripts/seed-course.ts amplify_outputs.master.json
 $env:ADMIN_PASSWORD = $null

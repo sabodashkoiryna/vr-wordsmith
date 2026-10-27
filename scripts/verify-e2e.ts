@@ -90,7 +90,22 @@ async function as(who: 'admin' | 'student') {
     /* не було сесії */
   }
   const c = who === 'admin' ? ADMIN : STUDENT;
-  await signIn({ username: c.email!, password: c.password! });
+  try {
+    await signIn({ username: c.email!, password: c.password! });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      [
+        `Вхід як ${who} (${c.email}) не вдався: ${msg}`,
+        '  • перевірте пароль — підказка Read-Host не приховує введеного, тож',
+        '    його легко не помітити й лишити плейсхолдер;',
+        '  • щойно створеному користувачеві потрібен ПОСТІЙНИЙ пароль:',
+        '    aws cognito-idp admin-set-user-password ... --permanent',
+        '    без нього статус лишається FORCE_CHANGE_PASSWORD, і вхід повертає',
+        '    виклик зміни пароля замість сесії.',
+      ].join('\n'),
+    );
+  }
 }
 
 const sum = (xs: number[]) => xs.reduce((s, v) => s + v, 0);
@@ -452,12 +467,11 @@ async function currentSub(): Promise<string | null> {
   return (session.tokens?.idToken?.payload.sub as string) ?? null;
 }
 
-main().catch(async (err) => {
+main().catch((err) => {
+  // signOut тут НЕ викликаємо: якщо впав саме вхід, сесії не існує, а спроба
+  // вийти з неї під час завершення процесу валила node з assertion у libuv
+  // (`!(handle->flags & UV_HANDLE_CLOSING)`) — помилка вгорі ставала
+  // непомітною за цим шумом.
   console.error('\nПОМИЛКА:', err instanceof Error ? err.message : err);
-  try {
-    await signOut();
-  } catch {
-    /* ігноруємо */
-  }
-  process.exit(1);
+  process.exitCode = 1;
 });
