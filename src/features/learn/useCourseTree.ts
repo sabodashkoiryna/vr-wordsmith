@@ -126,8 +126,11 @@ export function useCourseTree() {
             title: m.title,
             summary: m.summary ?? null,
             component: m.component ?? null,
-            quizPoints: m.quizPoints ?? 8,
-            assignmentPoints: m.assignmentPoints ?? 12,
+            quizPoints: m.quizPoints ?? 0,
+            // Помодульних практичних більше немає — усе в курсовому проєкті.
+            // Запасне значення 12 лишалося від старого оцінювання й дописувало
+            // модулю бали, яких у ньому немає.
+            assignmentPoints: m.assignmentPoints ?? 0,
             lessons: own,
             completedCount: own.filter((l) => l.completed).length,
           };
@@ -158,9 +161,14 @@ export function useCourseTree() {
               id: projectRow.id,
               title: projectRow.title,
               maxPoints: projectRow.maxPoints,
-              status: grade
-                ? 'graded'
-                : ((submission?.status as 'draft' | 'submitted' | 'returned') ?? 'not_started'),
+              /* Статус САМОГО подання головніший за наявність оцінки: робота
+                 спершу оцінюється, а потім може бути повернена на
+                 доопрацювання. Правило «є оцінка → Оцінено» показувало б
+                 повернену роботу як завершену — студент бачив би бал і не
+                 знав, що її чекають назад. */
+              status:
+                (submission?.status as 'draft' | 'submitted' | 'returned' | 'graded' | undefined) ??
+                (grade ? 'graded' : 'not_started'),
               pointsAwarded: grade?.pointsAwarded ?? null,
             }
           : null,

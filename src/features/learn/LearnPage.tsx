@@ -54,7 +54,7 @@ function ModuleCard({ module, index }: { module: ModuleNode; index: number }) {
           {module.code}
         </span>
         <span className="font-mono text-2xs text-ink-mute">
-          {module.quizPoints + module.assignmentPoints} балів
+          {module.quizPoints} балів за тест
         </span>
       </div>
 

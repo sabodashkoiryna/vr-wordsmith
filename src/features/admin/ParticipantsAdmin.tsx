@@ -24,6 +24,13 @@ type Row = {
  * того, кого ще жодного разу не оцінювали, запису немає взагалі: це не
  * помилка, а нормальний стан новачка, тож рядок показує нулі, а не зникає.
  */
+const WORK_LABEL: Record<string, string> = {
+  draft: 'чернетка',
+  submitted: 'на перевірці',
+  returned: 'повернуто',
+  graded: 'оцінено',
+};
+
 export default function ParticipantsAdmin() {
   const [rows, setRows] = useState<Row[]>([]);
   const [passing, setPassing] = useState(70);
@@ -185,7 +192,9 @@ export default function ParticipantsAdmin() {
                       <span>
                         УРОКІВ <b className="text-ink">{r.lessonsDone}</b>
                       </span>
-                      {r.submissionStatus && <span>РОБОТА · {r.submissionStatus}</span>}
+                      {r.submissionStatus && (
+                        <span>РОБОТА · {WORK_LABEL[r.submissionStatus] ?? r.submissionStatus}</span>
+                      )}
                     </div>
                     <div className="relative mt-3 max-w-md">
                       <ProgressBar

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import Button from '../../ui/Button';
+import { PageHeader } from './ui/adminUi';
 import { client } from '../../lib/amplify-client';
 import { unwrap } from '../../lib/unwrap';
 
@@ -246,6 +247,10 @@ export default function GradingQueue() {
 
   return (
     <div>
+      <PageHeader
+        title="Черга оцінювання"
+        count={loading ? undefined : String(rows.length)}
+      />
       <p className="max-w-2xl text-ink-soft">
         Роботи, здані на перевірку. Бал рахує сервер: ви виставляєте лише сирі значення
         рубрики, а нормалізацію до {rawMax > 0 ? `${rawMax} → ` : ''}балів курсу й перерахунок

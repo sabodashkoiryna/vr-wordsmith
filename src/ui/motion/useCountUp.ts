@@ -32,17 +32,36 @@ export function useCountUp(target: number, durationMs = 900): number {
     // поки ще рухається, і не «клацає» в кінці.
     const ease = (t: number) => 1 - Math.pow(1 - t, 3);
 
+    const settle = () => {
+      fromRef.current = target;
+      setValue(target);
+    };
+
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
       const next = from + (target - from) * ease(t);
       fromRef.current = next;
       setValue(next);
       if (t < 1) raf = requestAnimationFrame(tick);
-      else fromRef.current = target;
+      else settle();
     };
 
+    // Сторінка, яка не компонує кадри (фонова вкладка, згорнуте вікно),
+    // не отримує requestAnimationFrame узагалі — і число застрягло б на
+    // стартовому. Тут показується НЕ ефект, а дані: бали й пройдені уроки.
+    // Тому анімація лишається прикрасою, а підстраховка гарантує, що
+    // правильне значення зʼявиться навіть без жодного кадру.
+    if (document.visibilityState === 'hidden') {
+      settle();
+      return;
+    }
+
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const guard = setTimeout(settle, durationMs + 150);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(guard);
+    };
   }, [target, durationMs, reduced]);
 
   return value;
