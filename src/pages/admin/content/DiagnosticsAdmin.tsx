@@ -1,31 +1,36 @@
 import { useState } from 'react';
-import CrudTable from '../../../components/admin/CrudTable';
-import type { CrudField } from '../../../components/admin/CrudTable';
+import ResourceManager from '../../../features/admin/ui/ResourceManager';
+import type { Field } from '../../../features/admin/ui/ResourceManager';
 import { client } from '../../../lib/amplify-client';
 import { unwrap } from '../../../lib/unwrap';
 
-const instrumentFields: CrudField[] = [
-  { key: 'code', label: 'Код (a1 / t1 / s1 / e1)', type: 'text' },
-  { key: 'title', label: 'Назва', type: 'text' },
-  { key: 'type', label: 'Тип', type: 'select', options: ['likert', 'test', 'rubric'] },
+/* Поля звірені зі схемою. Раніше тут редагувалися `type`, `options`,
+   `correctIndex`, `rubricCode` і `maxPoints` — усе це лишилося від PoC, у
+   моделях їх немає, тож будь-яке збереження падало б.
+
+   Ключ правильної відповіді сюди не повернеться: для курсових тестів він
+   живе в окремій моделі QuizAnswerKey, недосяжній студентові. */
+
+const INSTRUMENT_FIELDS: Field[] = [
+  { key: 'code', label: 'Код', type: 'text', inTable: true, width: '110px', required: true },
+  { key: 'title', label: 'Назва', type: 'text', inTable: true, required: true },
+  { key: 'isActive', label: 'Активний', type: 'boolean', inTable: true, width: '110px' },
   { key: 'instructions', label: 'Інструкція', type: 'textarea' },
-  { key: 'boundsLow', label: 'Межа "низький/середній"', type: 'number' },
-  { key: 'boundsHigh', label: 'Межа "середній/високий"', type: 'number' },
+  { key: 'boundsLow', label: 'Межа «низький / середній»', type: 'number' },
+  { key: 'boundsHigh', label: 'Межа «середній / високий»', type: 'number' },
 ];
 
-const questionFields: CrudField[] = [
-  { key: 'instrumentCode', label: 'Код інструмента (a1 / t1 / s1 / e1)', type: 'text' },
-  { key: 'order', label: '№', type: 'number' },
-  { key: 'block', label: 'Блок (для тесту Т-1)', type: 'text' },
-  { key: 'text', label: 'Текст питання / критерію', type: 'textarea' },
-  { key: 'options', label: 'Варіанти відповіді (по рядку, для тесту)', type: 'stringArray' },
+const QUESTION_FIELDS: Field[] = [
   {
-    key: 'correctIndex',
-    label: 'Індекс правильної відповіді (0-based, лише для тесту Т-1 — бачить тільки Admins)',
-    type: 'number',
+    key: 'instrumentCode',
+    label: 'Код інструмента',
+    type: 'text',
+    inTable: true,
+    width: '150px',
+    required: true,
   },
-  { key: 'rubricCode', label: 'Код критерію рубрики (для Е-1, напр. А1)', type: 'text' },
-  { key: 'maxPoints', label: 'Макс. балів (для Е-1)', type: 'number' },
+  { key: 'order', label: '№', type: 'number', inTable: true, width: '70px', required: true },
+  { key: 'text', label: 'Текст', type: 'textarea', inTable: true, required: true },
 ];
 
 export default function DiagnosticsAdmin() {
@@ -33,32 +38,47 @@ export default function DiagnosticsAdmin() {
 
   return (
     <div>
-      <div className="tag-tabs">
-        <button className={tab === 'instruments' ? 'active' : ''} onClick={() => setTab('instruments')}>
-          Інструменти
-        </button>
-        <button className={tab === 'questions' ? 'active' : ''} onClick={() => setTab('questions')}>
-          Питання / критерії
-        </button>
+      <div className="mb-6 flex flex-wrap gap-2">
+        {(
+          [
+            ['instruments', 'Інструменти'],
+            ['questions', 'Питання'],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`cursor-pointer rounded-full border-none px-4 py-2 font-mono text-2xs transition-colors ${
+              tab === id
+                ? 'bg-violet-500 text-white'
+                : 'bg-space-700 text-ink-soft hover:bg-space-600 hover:text-ink'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {tab === 'instruments' && (
-        <CrudTable
-          title="Діагностичні інструменти"
-          fields={instrumentFields}
-          list={() => unwrap(client.models.DiagInstrument.list())}
+      {tab === 'instruments' ? (
+        <ResourceManager
+          title="Інструменти діагностики"
+          description="Анкети самозвіту дисертаційного дослідження. До балів курсу не входять."
+          fields={INSTRUMENT_FIELDS}
+          orderKey="code"
+          labelKey="title"
+          list={() => unwrap(client.models.DiagInstrument.list({ limit: 200 }))}
           create={(v) => unwrap(client.models.DiagInstrument.create(v as never))}
           update={(id, v) => unwrap(client.models.DiagInstrument.update({ id, ...v } as never))}
           remove={(id) => unwrap(client.models.DiagInstrument.delete({ id }))}
         />
-      )}
-
-      {tab === 'questions' && (
-        <CrudTable
-          title="Питання анкет / тесту / рубрики"
-          fields={questionFields}
+      ) : (
+        <ResourceManager
+          title="Питання діагностики"
+          description="Код інструмента звʼязує питання з анкетою."
+          fields={QUESTION_FIELDS}
           orderKey="order"
-          list={() => unwrap(client.models.DiagQuestion.list())}
+          labelKey="text"
+          list={() => unwrap(client.models.DiagQuestion.list({ limit: 500 }))}
           create={(v) => unwrap(client.models.DiagQuestion.create(v as never))}
           update={(id, v) => unwrap(client.models.DiagQuestion.update({ id, ...v } as never))}
           remove={(id) => unwrap(client.models.DiagQuestion.delete({ id }))}
