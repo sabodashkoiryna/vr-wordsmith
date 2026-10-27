@@ -65,6 +65,9 @@ export default function GradingQueue() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Типово показуємо лише те, що чекає на дію. Оцінені роботи нікуди не
+  // зникають, але й не змушують щоразу їх пропускати очима.
+  const [filter, setFilter] = useState<'active' | 'graded' | 'all'>('active');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -228,6 +231,14 @@ export default function GradingQueue() {
     }
   }
 
+  const visible = rows.filter((s) =>
+    filter === 'all'
+      ? true
+      : filter === 'graded'
+        ? s.status === 'graded'
+        : s.status === 'submitted' || s.status === 'returned',
+  );
+
   const rawMax = criteria.reduce((s, c) => s + c.maxPoints, 0);
   const rawTotal = criteria.reduce(
     (s, c) => s + Math.min(Math.max(Number(scores[c.code] ?? 0), 0), c.maxPoints),
@@ -260,11 +271,33 @@ export default function GradingQueue() {
       {error && <p className="mt-4 text-sm text-danger">{error}</p>}
       {notice && <p className="mt-4 text-sm text-success">{notice}</p>}
 
-      {rows.length === 0 ? (
-        <p className="mt-8 text-ink-mute">Поки нічого не здано.</p>
+      <div className="mb-5 flex flex-wrap gap-2">
+        {([
+          ['active', `Чекають (${rows.filter((x) => x.status === 'submitted' || x.status === 'returned').length})`],
+          ['graded', `Оцінені (${rows.filter((x) => x.status === 'graded').length})`],
+          ['all', `Усі (${rows.length})`],
+        ] as const).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setFilter(id)}
+            className={`cursor-pointer rounded-full border-none px-4 py-2 font-mono text-2xs transition-colors ${
+              filter === id
+                ? 'bg-violet-500 text-white'
+                : 'bg-space-700 text-ink-soft hover:bg-space-600 hover:text-ink'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {visible.length === 0 ? (
+        <p className="mt-8 text-ink-mute">
+          {filter === 'active' ? 'Нічого не чекає на перевірку.' : 'Порожньо.'}
+        </p>
       ) : (
         <ul className="mt-6 flex list-none flex-col gap-3 p-0">
-          {rows.map((s) => {
+          {visible.map((s) => {
             const g = grades[s.id];
             const st = STATUS[s.status] ?? { label: s.status, tone: 'text-ink-mute' };
             return (

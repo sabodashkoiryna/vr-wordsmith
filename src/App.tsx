@@ -21,7 +21,6 @@ import ResourcesAdmin from './pages/admin/content/ResourcesAdmin';
 import DiagnosticsAdmin from './pages/admin/content/DiagnosticsAdmin';
 import LessonsAdmin from './pages/admin/content/LessonsAdmin';
 import GalleryAdmin from './pages/admin/content/GalleryAdmin';
-import UsersAdmin from './pages/admin/UsersAdmin';
 
 // Кабінет тягне за собою react-markdown. Він потрібен лише залогіненим і лише
 // в уроці, тож іде окремим чанком — інакше кожен відвідувач лендінгу
@@ -29,6 +28,7 @@ import UsersAdmin from './pages/admin/UsersAdmin';
 const LearnPage = lazy(() => import('./features/learn/LearnPage'));
 const LessonPage = lazy(() => import('./features/learn/LessonPage'));
 const ProjectPage = lazy(() => import('./features/learn/ProjectPage'));
+const CertificatePage = lazy(() => import('./features/certificate/CertificatePage'));
 // Черга оцінювання тягне aws-amplify/storage заради посилань на файли
 // студентів — окремим чанком, як і решта адмінських екранів.
 const GradingQueue = lazy(() => import('./features/admin/GradingQueue'));
@@ -93,6 +93,16 @@ export default function App() {
                 </RequireAuth>
               }
             />
+            <Route
+              path="/certificate"
+              element={
+                <RequireAuth>
+                  <Suspense fallback={<Loading />}>
+                    <CertificatePage />
+                  </Suspense>
+                </RequireAuth>
+              }
+            />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignUpPage />} />
             <Route
@@ -133,7 +143,6 @@ export default function App() {
               <Route path="gallery" element={<GalleryAdmin />} />
               <Route path="resources" element={<ResourcesAdmin />} />
               <Route path="diagnostics" element={<DiagnosticsAdmin />} />
-              <Route path="users" element={<UsersAdmin />} />
             </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

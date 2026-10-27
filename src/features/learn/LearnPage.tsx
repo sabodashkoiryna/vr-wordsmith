@@ -191,6 +191,14 @@ export default function LearnPage() {
                     style={{ left: `${(tree.passingPoints / tree.totalPoints) * 100}%` }}
                   />
                 </div>
+                {(tree.points?.total ?? 0) >= tree.passingPoints && (
+                  <Link
+                    to="/certificate"
+                    className="mt-4 inline-flex items-center gap-2 rounded-full bg-space-600 px-4 py-2 font-mono text-2xs text-gold no-underline transition-colors hover:bg-space-500"
+                  >
+                    Переглянути сертифікат →
+                  </Link>
+                )}
                 <p className="mt-3 text-sm text-ink-mute">
                   {(tree.points?.total ?? 0) >= tree.passingPoints
                     ? `Поріг сертифіката (${tree.passingPoints}) пройдено.`

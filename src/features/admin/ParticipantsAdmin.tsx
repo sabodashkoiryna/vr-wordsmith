@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import Button from '../../ui/Button';
 import ProgressBar from '../../ui/ProgressBar';
+import { useAuth } from '../../context/AuthContext';
+import { AdminButton, Banner, PageHeader, SearchInput, Toolbar } from './ui/adminUi';
 import { client } from '../../lib/amplify-client';
 import { unwrap } from '../../lib/unwrap';
 
@@ -15,7 +17,11 @@ type Row = {
   lessonsDone: number;
   submissionStatus: string | null;
   certificateNumber: string | null;
+  group: string | null;
+  course: string | null;
 };
+
+const GROUPS = ['EG', 'KG', 'UNASSIGNED'];
 
 /**
  * Зареєстровані учасники: прогрес, бали, стан роботи, видача сертифіката.
@@ -32,6 +38,8 @@ const WORK_LABEL: Record<string, string> = {
 };
 
 export default function ParticipantsAdmin() {
+  const { userId } = useAuth();
+  const [query, setQuery] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
   const [passing, setPassing] = useState(70);
   const [total, setTotal] = useState(100);
@@ -85,6 +93,8 @@ export default function ParticipantsAdmin() {
               lessonsDone: doneByStudent.get(p.id) ?? 0,
               submissionStatus: subByStudent.get(p.id)?.status ?? null,
               certificateNumber: certByStudent.get(p.id)?.certificateNumber ?? null,
+              group: p.group ?? null,
+              course: p.course ?? null,
             };
           })
           .sort((a, b) => b.totalPoints - a.totalPoints),
@@ -99,6 +109,39 @@ export default function ParticipantsAdmin() {
   useEffect(() => {
     void load();
   }, [load]);
+
+
+  async function saveField(id: string, field: 'group' | 'institution' | 'course', value: string) {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+    try {
+      await unwrap(client.models.UserProfile.update({ id, [field]: value } as never));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не вдалося зберегти');
+    }
+  }
+
+  async function changeRole(row: Row, action: 'promote' | 'demote') {
+    if (
+      action === 'demote' &&
+      !window.confirm(
+        `Зняти роль Admins із ${row.email}?\n\nЦя людина втратить доступ до адмін-панелі.`,
+      )
+    ) {
+      return;
+    }
+    setBusyId(row.id);
+    setError(null);
+    setNotice(null);
+    try {
+      await unwrap(client.mutations.promoteToAdmin({ userId: row.id, action }));
+      setNotice(action === 'promote' ? 'Роль надано.' : 'Роль знято.');
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не вдалося змінити роль');
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   async function issue(row: Row) {
     if (
@@ -138,12 +181,28 @@ export default function ParticipantsAdmin() {
 
   if (loading) return <p className="text-ink-mute">Завантажуємо учасників…</p>;
 
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? rows.filter(
+        (r) =>
+          r.fullName.toLowerCase().includes(q) ||
+          r.email.toLowerCase().includes(q) ||
+          (r.institution ?? '').toLowerCase().includes(q),
+      )
+    : rows;
+
+  const input =
+    'w-full rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-space-900/60 px-3 py-2 text-sm text-ink focus:border-cyan-400 focus:outline-none';
+
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="rounded-full bg-space-700 px-4 py-2 font-mono text-2xs text-ink-mute">
-          УЧАСНИКІВ: {rows.length}
-        </span>
+      <PageHeader
+        title="Учасники"
+        description="Усе про людину на одному екрані: прогрес, бали, робота, дослідницька група й роль."
+        count={`${visible.length}`}
+      />
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <span className="rounded-full bg-space-700 px-4 py-2 font-mono text-2xs text-ink-mute">
           ПОРІГ: {passing} З {total}
         </span>
@@ -156,14 +215,20 @@ export default function ParticipantsAdmin() {
         </span>
       </div>
 
-      {error && <p className="mt-4 text-sm text-danger">{error}</p>}
-      {notice && <p className="mt-4 text-sm text-success">{notice}</p>}
+      <Toolbar>
+        <SearchInput value={query} onChange={setQuery} placeholder="Імʼя, email, заклад…" />
+      </Toolbar>
 
-      {rows.length === 0 ? (
-        <p className="mt-8 text-ink-mute">Ще ніхто не зареєструвався.</p>
+      {error && <Banner tone="error">{error}</Banner>}
+      {notice && <Banner tone="success">{notice}</Banner>}
+
+      {visible.length === 0 ? (
+        <p className="mt-8 text-ink-mute">
+          {q ? 'Нікого не знайдено.' : 'Ще ніхто не зареєструвався.'}
+        </p>
       ) : (
-        <ul className="mt-6 flex list-none flex-col gap-3 p-0">
-          {rows.map((r) => {
+        <ul className="mt-2 flex list-none flex-col gap-3 p-0">
+          {visible.map((r) => {
             const eligible = r.totalPoints >= passing;
             return (
               <li key={r.id} className="rounded-[var(--radius-lg)] bg-space-800 p-5">
@@ -227,6 +292,71 @@ export default function ParticipantsAdmin() {
                     )}
                   </div>
                 </div>
+
+                {/* Профіль і роль — те, заради чого була окрема сторінка
+                    «Ролі». Окремо вона лише дублювала цей самий список, тож
+                    усе про людину зведено сюди. Згорнуто, бо щоденна робота
+                    тут — дивитися прогрес, а не правити заклад. */}
+                <details className="mt-4 border-t border-[var(--line)] pt-3">
+                  <summary className="cursor-pointer font-mono text-2xs tracking-widest text-ink-mute">
+                    ПРОФІЛЬ І РОЛЬ
+                  </summary>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-[120px_1fr_1fr_auto] sm:items-end">
+                    <label className="flex flex-col gap-1.5">
+                      <span className="font-mono text-2xs tracking-widest text-ink-mute">ГРУПА</span>
+                      <select
+                        value={r.group ?? 'UNASSIGNED'}
+                        onChange={(e) => saveField(r.id, 'group', e.target.value)}
+                        className={input}
+                      >
+                        {GROUPS.map((g) => (
+                          <option key={g} value={g}>
+                            {g}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex flex-col gap-1.5">
+                      <span className="font-mono text-2xs tracking-widest text-ink-mute">ЗАКЛАД</span>
+                      <input
+                        defaultValue={r.institution ?? ''}
+                        onBlur={(e) => saveField(r.id, 'institution', e.target.value)}
+                        className={input}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1.5">
+                      <span className="font-mono text-2xs tracking-widest text-ink-mute">КУРС</span>
+                      <input
+                        defaultValue={r.course ?? ''}
+                        onBlur={(e) => saveField(r.id, 'course', e.target.value)}
+                        className={input}
+                      />
+                    </label>
+                    <div className="flex gap-2">
+                      {r.id === userId ? (
+                        <span className="self-center font-mono text-2xs text-ink-mute">
+                          це ви — роль не змінюється
+                        </span>
+                      ) : (
+                        <>
+                          <AdminButton
+                            onClick={() => changeRole(r, 'promote')}
+                            disabled={busyId === r.id}
+                          >
+                            + Admins
+                          </AdminButton>
+                          <AdminButton
+                            variant="danger"
+                            onClick={() => changeRole(r, 'demote')}
+                            disabled={busyId === r.id}
+                          >
+                            − Admins
+                          </AdminButton>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </details>
               </li>
             );
           })}

@@ -24,7 +24,6 @@ const SECTIONS: { title: string; items: { to: string; label: string; end?: boole
     items: [
       { to: '/admin/participants', label: 'Учасники' },
       { to: '/admin/grading', label: 'Оцінювання' },
-      { to: '/admin/users', label: 'Ролі' },
     ],
   },
   {
