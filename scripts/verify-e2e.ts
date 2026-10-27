@@ -112,7 +112,36 @@ const sum = (xs: number[]) => xs.reduce((s, v) => s + v, 0);
 
 /* ── основний сценарій ────────────────────────────────────────────────── */
 
+/**
+ * Клієнт будує список моделей із amplify_outputs.json, а не зі схеми. Файл,
+ * згенерований до появи нової моделі, дає `client.models.X === undefined` —
+ * і падіння виглядає як «Cannot read properties of undefined (reading
+ * 'list')», що про справжню причину не каже нічого.
+ */
+function preflight() {
+  const expected = [
+    'Course', 'Module', 'Lesson', 'Quiz', 'QuizQuestion', 'QuizOption', 'QuizAnswerKey',
+    'Assignment', 'RubricCriterion', 'UserProfile', 'LessonProgress', 'CourseEnrollment',
+    'QuizAttempt', 'AssignmentSubmission', 'AssignmentGrade', 'Certificate',
+    'CertificateNumber', 'GalleryItem',
+  ];
+  const missing = expected.filter((m) => !(client.models as Record<string, unknown>)[m]);
+  if (missing.length) {
+    throw new Error(
+      [
+        `У файлі виводів немає моделей: ${missing.join(', ')}.`,
+        'Це не помилка схеми — застарілий amplify_outputs. Перегенеруйте:',
+        '  $env:AWS_REGION = "us-east-1"',
+        '  npx.cmd ampx generate outputs --app-id d1fmnqsgshywg2 --branch master --out-dir .',
+        '  mv amplify_outputs.json amplify_outputs.master.json',
+      ].join('\n'),
+    );
+  }
+}
+
 async function main() {
+  preflight();
+
   // ===================================================================== //
   head('A. Контент на місці (адмін)');
   await as('admin');
