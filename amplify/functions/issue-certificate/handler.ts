@@ -72,8 +72,36 @@ export const handler: Schema['issueCertificate']['functionHandler'] = async (eve
 
   const { data: profile } = await data.models.UserProfile.get({ id: studentId });
   const now = new Date();
-  const seq = String(existing.length + Date.now() % 10000).padStart(4, '0');
-  const certificateNumber = `VRW-${now.getFullYear()}-${seq}`;
+
+  // Номер БЕРЕТЬСЯ З ПУЛУ, а не складається тут. Номер сертифіката має
+  // збігатися з реєстром закладу, тож вигадувати його система не може —
+  // і не повинна мати змоги видати документ, номера для якого не існує.
+  const { data: freeNumbers } = await data.models.CertificateNumber.listCertificateNumberByStatusAndNumber(
+    { status: 'free' },
+    { limit: 1, sortDirection: 'ASC' },
+  );
+  const slot = freeNumbers[0];
+  if (!slot) {
+    return {
+      eligible: true,
+      reason: 'no_numbers_left',
+      totalPoints,
+      maxPoints,
+    };
+  }
+
+  // Позначаємо ВИКОРИСТАНИМ до створення документа. Якщо впаде наступний
+  // крок, номер згорить — його видно в адмінці як 'used' без сертифіката, і
+  // це виправно. Зворотний порядок давав би гірший збій: виданий сертифікат
+  // із номером, який і далі вважається вільним, тобто майбутній дублікат.
+  await data.models.CertificateNumber.update({
+    id: slot.id,
+    status: 'used',
+    studentId,
+    usedAt: now.toISOString(),
+  });
+
+  const certificateNumber = slot.number;
   const verificationCode = `${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-4)}`.toUpperCase();
 
   // Знімаємо снапшот: пізніша зміна назви курсу чи ПІБ у профілі не повинна
@@ -89,6 +117,10 @@ export const handler: Schema['issueCertificate']['functionHandler'] = async (eve
     maxPoints,
     issuedAt: now.toISOString(),
   });
+
+  if (cert?.id) {
+    await data.models.CertificateNumber.update({ id: slot.id, certificateId: cert.id });
+  }
 
   const { data: enrollments } = await data.models.CourseEnrollment.listCourseEnrollmentByStudentId({
     studentId,

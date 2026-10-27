@@ -524,11 +524,37 @@ const schema = a.schema({
     .handler(a.handler.function(gradeAssignment)),
 
   /** Не-адмінам studentId примусово замінюється на власний sub. */
+  /** Пул номерів сертифікатів.
+   *
+   *  Номери вносить адміністратор списком, бо вони зазвичай походять з
+   *  реєстру закладу, а не вигадуються системою. Раніше номер складався в
+   *  Lambda з року й решти від Date.now() — такий «номер» неможливо звірити
+   *  з жодним зовнішнім документом, і при збігу часу два сертифікати могли
+   *  отримати однаковий.
+   *
+   *  Видача забирає найменший вільний номер і позначає його використаним.
+   *  Запис 'used' без certificateId означає спалений номер: видача впала між
+   *  позначенням і створенням документа. Його видно в адмінці й можна
+   *  повернути у вільні вручну. */
+  CertificateNumber: a
+    .model({
+      number: a.string().required(),
+      status: a.string().required(), // 'free' | 'used'
+      certificateId: a.id(),
+      studentId: a.id(),
+      batchLabel: a.string(),
+      usedAt: a.datetime(),
+    })
+    .secondaryIndexes((index) => [index('status').sortKeys(['number'])])
+    .authorization((allow) => [allow.groups(['Admins'])]),
+
   issueCertificate: a
     .mutation()
     .arguments({ studentId: a.id() })
     .returns(a.ref('CertificateResult'))
-    .authorization((allow) => [allow.authenticated(), allow.groups(['Admins'])])
+    // ЛИШЕ адміни: номер із пулу — обмежений ресурс, і витрачати його без
+    // підтвердження не можна. Студент бачить у кабінеті, що поріг пройдено.
+    .authorization((allow) => [allow.groups(['Admins'])])
     .handler(a.handler.function(issueCertificate)),
 
   promoteToAdmin: a

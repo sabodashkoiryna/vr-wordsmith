@@ -19,6 +19,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ModulesAdmin from './pages/admin/content/ModulesAdmin';
 import ResourcesAdmin from './pages/admin/content/ResourcesAdmin';
 import DiagnosticsAdmin from './pages/admin/content/DiagnosticsAdmin';
+import LessonsAdmin from './pages/admin/content/LessonsAdmin';
+import GalleryAdmin from './pages/admin/content/GalleryAdmin';
 import UsersAdmin from './pages/admin/UsersAdmin';
 
 // Кабінет тягне за собою react-markdown. Він потрібен лише залогіненим і лише
@@ -30,6 +32,8 @@ const ProjectPage = lazy(() => import('./features/learn/ProjectPage'));
 // Черга оцінювання тягне aws-amplify/storage заради посилань на файли
 // студентів — окремим чанком, як і решта адмінських екранів.
 const GradingQueue = lazy(() => import('./features/admin/GradingQueue'));
+const ParticipantsAdmin = lazy(() => import('./features/admin/ParticipantsAdmin'));
+const CertificatesAdmin = lazy(() => import('./features/admin/CertificatesAdmin'));
 
 function Loading() {
   return (
@@ -108,7 +112,25 @@ export default function App() {
                   </Suspense>
                 }
               />
+              <Route
+                path="participants"
+                element={
+                  <Suspense fallback={<Loading />}>
+                    <ParticipantsAdmin />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="certificates"
+                element={
+                  <Suspense fallback={<Loading />}>
+                    <CertificatesAdmin />
+                  </Suspense>
+                }
+              />
               <Route path="modules" element={<ModulesAdmin />} />
+              <Route path="lessons" element={<LessonsAdmin />} />
+              <Route path="gallery" element={<GalleryAdmin />} />
               <Route path="resources" element={<ResourcesAdmin />} />
               <Route path="diagnostics" element={<DiagnosticsAdmin />} />
               <Route path="users" element={<UsersAdmin />} />
