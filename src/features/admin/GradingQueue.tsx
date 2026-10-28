@@ -10,7 +10,6 @@ type Submission = {
   assignmentId: string;
   title: string;
   description: string | null;
-  externalUrl: string | null;
   fileKeys: string[];
   status: string;
   submittedAt: string | null;
@@ -68,17 +67,25 @@ export default function GradingQueue() {
   // Типово показуємо лише те, що чекає на дію. Оцінені роботи нікуди не
   // зникають, але й не змушують щоразу їх пропускати очима.
   const [filter, setFilter] = useState<'active' | 'graded' | 'all'>('active');
+  // Публікація в галерею: яке подання відкрите і які саме файли автор
+  // погодився показати. Вибір пофайловий навмисно — відеозапис
+  // мікровикладання публікують далеко не всі, а технологічну карту майже всі.
+  const [publishFor, setPublishFor] = useState<string | null>(null);
+  const [publishPick, setPublishPick] = useState<Record<string, boolean>>({});
+  const [publishedIds, setPublishedIds] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [subs, crits, gr, profs] = await Promise.all([
+      const [subs, crits, gr, profs, gallery] = await Promise.all([
         unwrap(client.models.AssignmentSubmission.list({ limit: 500 })),
         unwrap(client.models.RubricCriterion.list({ limit: 200 })),
         unwrap(client.models.AssignmentGrade.list({ limit: 500 })),
         unwrap(client.models.UserProfile.list({ limit: 500 })),
+        unwrap(client.models.GalleryItem.list({ limit: 500 })),
       ]);
+      setPublishedIds(new Set(gallery.map((g) => g.submissionId).filter((x): x is string => !!x)));
 
       setRows(
         subs
@@ -89,7 +96,6 @@ export default function GradingQueue() {
             assignmentId: s.assignmentId,
             title: s.title,
             description: s.description ?? null,
-            externalUrl: s.externalUrl ?? null,
             fileKeys: (s.fileKeys ?? []).filter((k): k is string => !!k),
             status: s.status,
             submittedAt: s.submittedAt ?? null,
@@ -199,31 +205,74 @@ export default function GradingQueue() {
     }
   }
 
+  function openPublish(s: Submission) {
+    setPublishFor(s.id);
+    setError(null);
+    setNotice(null);
+    // Типово пропонуємо знімки сцени: саме вони і є галереєю. Відео й
+    // документи адмін доклацує сам, якщо автор на це погодився.
+    setPublishPick(
+      Object.fromEntries(s.fileKeys.map((k) => [k, /.(png|jpe?g|webp|gif|avif)$/i.test(k)])),
+    );
+  }
+
+  /**
+   * Публікація роботи в галерею.
+   *
+   * Файли КОПІЮЮТЬСЯ в public/gallery/*, а не лінкуються з
+   * submissions/{entity_id}/*. Той префікс гостю не відкритий і відкритим
+   * бути не може: там лежать роботи всіх студентів, а авторизація S3 діє на
+   * префікс, а не на окремий об'єкт. Копіювання робить сам S3 (CopyObject),
+   * тож 50-мегабайтне відео не їде через браузер адміна.
+   *
+   * Запис створюється ПРИХОВАНИМ: згода автора на публічне ім'я і сама
+   * публікація — різні рішення, і друге має лишатися свідомим.
+   */
   async function publishToGallery(s: Submission) {
+    const picked = s.fileKeys.filter((k) => publishPick[k]);
+    if (picked.length === 0) {
+      setError('Оберіть хоча б один файл — галерея без файлів не має сенсу.');
+      return;
+    }
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
       const existing = await unwrap(client.models.GalleryItem.list({ limit: 500 }));
       if (existing.some((g) => g.submissionId === s.id)) {
-        setNotice('Цю роботу вже додано в галерею.');
+        setNotice('Цю роботу вже додано в галерею — змінюйте її в розділі «Галерея».');
+        setPublishFor(null);
         return;
       }
+
+      const { copy } = await storage();
+      const publicKeys: string[] = [];
+      for (const key of picked) {
+        const name = key.split('/').pop() ?? key;
+        const destination = `public/gallery/${s.id}/${name}`;
+        await copy({ source: { path: key }, destination: { path: destination } });
+        publicKeys.push(destination);
+      }
+
+      const firstImage = publicKeys.find((k) => /.(png|jpe?g|webp|gif|avif)$/i.test(k));
       await unwrap(
         client.models.GalleryItem.create({
           order: existing.length,
-          // Створюємо ПРИХОВАНОЮ навмисно: згода автора на публічне ім'я і
-          // сама публікація — різні рішення, і друге має лишатися свідомим.
           publishState: 'hidden',
           title: s.title,
           description: s.description,
           authorDisplayName: profiles[s.studentId] ?? null,
           consentGiven: false,
-          externalUrl: s.externalUrl,
+          coverImageKey: firstImage ?? null,
+          fileKeys: publicKeys,
           submissionId: s.id,
         }),
       );
-      setNotice('Додано в галерею як приховану. Опублікуйте після згоди автора.');
+      setPublishedIds((prev) => new Set(prev).add(s.id));
+      setPublishFor(null);
+      setNotice(
+        `Додано в галерею як приховану, файлів скопійовано: ${publicKeys.length}. Опублікуйте після згоди автора.`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не вдалося додати в галерею');
     } finally {
@@ -334,16 +383,6 @@ export default function GradingQueue() {
                     )}
 
                     <div className="mt-4 flex flex-wrap gap-3">
-                      {s.externalUrl && (
-                        <a
-                          href={s.externalUrl}
-                          target="_blank"
-                          rel="noreferrer noopener"
-                          className="rounded-full bg-space-600 px-4 py-2 font-mono text-2xs text-violet-300 no-underline hover:bg-space-500"
-                        >
-                          Відкрити VR-продукт ↗
-                        </a>
-                      )}
                       {s.fileKeys.map((k) => (
                         <button
                           key={k}
@@ -415,12 +454,55 @@ export default function GradingQueue() {
                       <Button onClick={() => submitGrade(true)} disabled={busy} variant="ghost">
                         Повернути на доопрацювання
                       </Button>
-                      {grades[s.id] && (
-                        <Button onClick={() => publishToGallery(s)} disabled={busy} variant="ghost">
-                          Додати в галерею
-                        </Button>
-                      )}
+                      {grades[s.id] &&
+                        (publishedIds.has(s.id) ? (
+                          <span className="font-mono text-2xs text-ink-mute">УЖЕ В ГАЛЕРЕЇ</span>
+                        ) : (
+                          <Button
+                            onClick={() => (publishFor === s.id ? setPublishFor(null) : openPublish(s))}
+                            disabled={busy}
+                            variant="ghost"
+                          >
+                            {publishFor === s.id ? 'Скасувати' : 'Додати в галерею'}
+                          </Button>
+                        ))}
                     </div>
+
+                    {publishFor === s.id && (
+                      <div className="mt-5 rounded-[var(--radius-sm)] bg-space-700 p-5">
+                        <div className="font-mono text-2xs tracking-widest text-violet-300">
+                          ЩО ПОКАЗАТИ ПУБЛІЧНО
+                        </div>
+                        <p className="mt-2 max-w-2xl text-sm text-ink-soft">
+                          Обрані файли копіюються в публічне сховище під назвою й описом автора.
+                          Запис створюється прихованим — опублікуєте його в розділі «Галерея»,
+                          коли автор підтвердить згоду.
+                        </p>
+                        <ul className="mt-4 flex list-none flex-col gap-2 p-0">
+                          {s.fileKeys.map((k) => (
+                            <li key={k}>
+                              <label className="flex cursor-pointer items-center gap-3 text-sm text-ink-soft">
+                                <input
+                                  type="checkbox"
+                                  checked={!!publishPick[k]}
+                                  onChange={(e) =>
+                                    setPublishPick((p) => ({ ...p, [k]: e.target.checked }))
+                                  }
+                                />
+                                {k.split('/').pop()?.replace(/^d+-/, '')}
+                              </label>
+                            </li>
+                          ))}
+                        </ul>
+                        <Button
+                          onClick={() => publishToGallery(s)}
+                          disabled={busy}
+                          className="mt-5"
+                        >
+                          {busy ? 'Копіюємо файли…' : 'Додати в галерею'}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </li>

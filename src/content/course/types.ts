@@ -50,7 +50,6 @@ export type ProjectSeed = {
   summary: string;
   instructions: string;
   maxPoints: number;
-  allowExternalLink: boolean;
   rubric: RubricBlockSeed[];
 };
 

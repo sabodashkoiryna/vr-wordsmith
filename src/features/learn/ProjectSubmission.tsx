@@ -9,7 +9,6 @@ type Submission = {
   id: string;
   title: string;
   description: string | null;
-  externalUrl: string | null;
   fileKeys: string[];
   status: string;
   submittedAt: string | null;
@@ -42,11 +41,9 @@ const storage = () => import('aws-amplify/storage');
  */
 export default function ProjectSubmission({
   assignmentId,
-  allowExternalLink,
   onChanged,
 }: {
   assignmentId: string;
-  allowExternalLink: boolean;
   onChanged: () => void;
 }) {
   const { userId } = useAuth();
@@ -54,7 +51,6 @@ export default function ProjectSubmission({
   const [loaded, setLoaded] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [externalUrl, setExternalUrl] = useState('');
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -79,14 +75,12 @@ export default function ProjectSubmission({
           id: row.id,
           title: row.title,
           description: row.description ?? null,
-          externalUrl: row.externalUrl ?? null,
           fileKeys: keys,
           status: row.status,
           submittedAt: row.submittedAt ?? null,
         });
         setTitle(row.title);
         setDescription(row.description ?? '');
-        setExternalUrl(row.externalUrl ?? '');
         setUploads(keys.map((k) => ({ name: k.split('/').pop() ?? k, key: k })));
       }
     } catch (err) {
@@ -109,7 +103,9 @@ export default function ProjectSubmission({
     setError(null);
     for (const file of Array.from(files)) {
       if (file.size > MAX_MB * 1024 * 1024) {
-        setError(`«${file.name}» більший за ${MAX_MB} МБ — завантажте меншим або дайте посилання.`);
+        setError(
+          `«${file.name}» більший за ${MAX_MB} МБ. Стисніть відео або завантажте його частинами.`,
+        );
         continue;
       }
       try {
@@ -153,7 +149,6 @@ export default function ProjectSubmission({
       const payload = {
         title: title.trim(),
         description: description.trim() || null,
-        externalUrl: externalUrl.trim() || null,
         fileKeys: uploads.map((u) => u.key),
         status,
         submittedAt: status === 'submitted' ? new Date().toISOString() : null,
@@ -181,7 +176,10 @@ export default function ProjectSubmission({
 
   if (!loaded) return <p className="text-ink-mute">Завантажуємо…</p>;
 
-  const nothingToSubmit = !title.trim() || (uploads.length === 0 && !externalUrl.trim());
+  // Робота здається ФАЙЛАМИ. Посилання прибрано свідомо: сцена в CoSpaces
+  // живе рівно доти, доки живий чужий акаунт, і галерея з часом
+  // перетворилася б на добірку мертвих посилань.
+  const nothingToSubmit = !title.trim() || uploads.length === 0;
 
   return (
     <div className="rounded-[var(--radius-lg)] bg-space-800 p-6 md:p-8">
@@ -195,9 +193,9 @@ export default function ProjectSubmission({
         </p>
       ) : (
         <p className="mt-3 max-w-2xl text-ink-soft">
-          Прикріпіть технологічну карту файлом, а VR-продукт і відеозапис —
-          посиланнями. Поки не натиснете «Здати», робота лишається чернеткою і
-          видима лише вам.
+          Усе здається файлами: технологічна карта, знімки VR-сцени та
+          відеозапис мікровикладання. Поки не натиснете «Здати», робота
+          лишається чернеткою і видима лише вам.
         </p>
       )}
 
@@ -222,16 +220,6 @@ export default function ProjectSubmission({
             className="w-full rounded-[var(--radius-sm)] border-0 bg-space-700 p-4 text-ink shadow-[inset_0_0_0_1px_var(--line)] outline-none placeholder:text-ink-dim focus:shadow-[var(--ring-focus)] disabled:opacity-60"
           />
         </label>
-
-        {allowExternalLink && (
-          <Field
-            label="ПОСИЛАННЯ НА VR-ПРОДУКТ І ВІДЕО"
-            disabled={locked}
-            value={externalUrl}
-            onChange={(e) => setExternalUrl(e.target.value)}
-            hint="CoSpaces Edu / ThingLink / 360°-тур, і посилання на відеозапис мікровикладання"
-          />
-        )}
 
         <div>
           <span className="font-mono text-2xs tracking-widest text-ink-mute">
@@ -290,7 +278,7 @@ export default function ProjectSubmission({
           </Button>
           {nothingToSubmit && (
             <span className="text-sm text-ink-mute">
-              Потрібні назва і хоча б один файл або посилання.
+              Потрібні назва і хоча б один файл.
             </span>
           )}
         </div>

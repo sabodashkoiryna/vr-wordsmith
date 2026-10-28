@@ -33,7 +33,12 @@ const FIELDS: Field[] = [
   { key: 'subject', label: 'Предмет і клас', type: 'text' },
   { key: 'tool', label: 'Інструмент', type: 'text' },
   { key: 'moduleCode', label: 'Модуль', type: 'text' },
-  { key: 'externalUrl', label: 'Посилання на роботу', type: 'text' },
+  {
+    key: 'fileKeys',
+    label: 'Файли роботи',
+    type: 'stringArray',
+    hint: 'Ключі в public/gallery/ — копії, які зробила публікація з черги оцінювання. Рядок, прибраний звідси, зникає з галереї; сам файл лишається в сховищі.',
+  },
   {
     key: 'coverImageKey',
     label: 'Обкладинка',

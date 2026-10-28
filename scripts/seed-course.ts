@@ -315,7 +315,6 @@ async function main() {
     title: courseProject.title,
     instructions: courseProject.instructions,
     maxPoints: courseProject.maxPoints,
-    allowExternalLink: courseProject.allowExternalLink,
     maxFileSizeMb: 50,
   };
   // Та сама ознака, що й вище: інакше рядок, який ми щойно вирішили НЕ

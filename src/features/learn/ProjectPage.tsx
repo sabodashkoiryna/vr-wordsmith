@@ -10,7 +10,7 @@ import { READING_THEMES, useReadingTheme } from './readingTheme';
 import LessonContent from './LessonContent';
 
 type Criterion = { id: string; order: number; blockLabel: string | null; code: string; text: string; maxPoints: number };
-type Loaded = { instructions: string | null; allowExternalLink: boolean; criteria: Criterion[] };
+type Loaded = { instructions: string | null; criteria: Criterion[] };
 
 const STATUS_LABEL: Record<string, string> = {
   not_started: 'Не розпочато',
@@ -54,7 +54,6 @@ export default function ProjectPage() {
         if (cancelled) return;
         setBody({
           instructions: assignment?.instructions ?? null,
-          allowExternalLink: assignment?.allowExternalLink !== false,
           criteria: criteria
             .map((c) => ({
               id: c.id,
@@ -104,7 +103,6 @@ export default function ProjectPage() {
 
   const project = tree.project;
   const rawMax = (body?.criteria ?? []).reduce((s, c) => s + c.maxPoints, 0);
-  const allowExternalLink = body?.allowExternalLink !== false;
 
   // Критерії згруповані блоками рубрики — саме так їх читає і студент, і
   // адмін у черзі оцінювання.
@@ -200,7 +198,6 @@ export default function ProjectPage() {
       <section className="container-content relative pb-10">
         <ProjectSubmission
           assignmentId={project.id}
-          allowExternalLink={allowExternalLink}
           onChanged={reload}
         />
       </section>

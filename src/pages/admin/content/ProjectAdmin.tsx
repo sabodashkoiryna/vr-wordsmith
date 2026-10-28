@@ -94,7 +94,6 @@ export default function ProjectAdmin() {
           title: 'Курсовий проєкт',
           instructions: '',
           maxPoints: 40,
-          allowExternalLink: false,
           maxFileSizeMb: 50,
         }),
       );

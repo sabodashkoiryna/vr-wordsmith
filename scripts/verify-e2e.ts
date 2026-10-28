@@ -347,7 +347,6 @@ async function main() {
         assignmentId: project!.id,
         title: 'Перевірочна робота (E2E)',
         description: 'Створено наскрізним тестом.',
-        externalUrl: 'https://example.org/vr-scene',
         status: 'submitted',
         submittedAt: new Date().toISOString(),
       }),
@@ -469,9 +468,13 @@ async function main() {
 
   const gallery = await unwrap(client.models.GalleryItem.list({ limit: 500 }));
   check('є записи галереї', gallery.length > 0);
-  check('опубліковані записи мають посилання або обкладинку',
+  // Робота без жодного файлу в галереї — це картка ні про що: посилань ми
+  // не приймаємо, отже показувати нічого.
+  check('опубліковані записи мають файли в public/gallery/',
     gallery.filter((g) => g.publishState === 'published')
-      .every((g) => !!g.externalUrl || !!g.coverImageKey));
+      .every((g) => (g.fileKeys ?? []).length > 0));
+  check('жоден ключ галереї не вказує на приватний префікс submissions/',
+    !gallery.some((g) => (g.fileKeys ?? []).some((k) => !!k && !k.startsWith('public/'))));
   check('жоден опублікований запис не має імені автора без згоди',
     !gallery.some((g) => g.publishState === 'published' && g.authorDisplayName && g.consentGiven !== true));
 

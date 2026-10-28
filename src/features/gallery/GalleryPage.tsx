@@ -2,9 +2,26 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../../ui/Button';
 import { Reveal } from '../../ui/motion/Reveal';
-import { galleryItems, coverGradients, TOOLS, type GalleryItem } from './galleryData';
+import { coverGradients, TOOLS } from './galleryData';
+import { useGalleryItems, type LiveGalleryItem } from './useGalleryItems';
 
-function Cover({ item }: { item: GalleryItem }) {
+function Cover({ item }: { item: LiveGalleryItem }) {
+  if (item.coverUrl) {
+    return (
+      <div className="relative aspect-[4/3] overflow-hidden bg-space-700">
+        <img
+          src={item.coverUrl}
+          alt=""
+          loading="lazy"
+          className="h-full w-full object-cover"
+        />
+        <div
+          className="absolute inset-0"
+          style={{ boxShadow: 'inset 0 -60px 80px -40px rgb(5 4 14 / 0.9)' }}
+        />
+      </div>
+    );
+  }
   return (
     <div
       className="relative aspect-[4/3] overflow-hidden"
@@ -31,7 +48,7 @@ function Cover({ item }: { item: GalleryItem }) {
   );
 }
 
-function Card({ item, index }: { item: GalleryItem; index: number }) {
+function Card({ item, index }: { item: LiveGalleryItem; index: number }) {
   const inner = (
     <>
       <Cover item={item} />
@@ -44,6 +61,21 @@ function Card({ item, index }: { item: GalleryItem; index: number }) {
         </div>
         <h3 className="font-display text-lg leading-snug text-ink">{item.title}</h3>
         <p className="mt-3 flex-1 text-sm leading-relaxed text-ink-soft">{item.description}</p>
+        {item.files.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {item.files.map((file) => (
+              <a
+                key={file.url}
+                href={file.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full bg-space-600 px-3 py-1.5 font-mono text-2xs text-ink-soft no-underline transition-colors hover:bg-space-500 hover:text-ink"
+              >
+                {file.isImage ? '🖼' : '⤓'} {file.name}
+              </a>
+            ))}
+          </div>
+        )}
         <p className="mt-5 border-t border-[var(--line)] pt-4 font-mono text-2xs tracking-widest text-ink-mute">
           {item.isPlaceholder ? 'ОЧІКУЄ НА ПЕРШУ РОБОТУ' : item.authorDisplayName}
         </p>
@@ -56,31 +88,26 @@ function Card({ item, index }: { item: GalleryItem; index: number }) {
 
   return (
     <Reveal delay={index % 3} className="h-full">
-      {item.externalUrl ? (
-        <a
-          href={item.externalUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${shell} h-full no-underline`}
-        >
-          {inner}
-        </a>
-      ) : (
-        <article className={`${shell} h-full`}>{inner}</article>
-      )}
+      <article className={`${shell} h-full`}>{inner}</article>
     </Reveal>
   );
 }
 
 export default function GalleryPage() {
   const [tool, setTool] = useState<string | null>(null);
+  const { items, loading, error, hasRealWorks } = useGalleryItems();
 
   const filtered = useMemo(
-    () => (tool ? galleryItems.filter((i) => i.tool === tool) : galleryItems),
-    [tool],
+    () => (tool ? items.filter((i) => i.tool === tool) : items),
+    [tool, items],
   );
 
-  const hasRealWorks = galleryItems.some((i) => !i.isPlaceholder);
+  // Фільтр будуємо з того, що справді є: інакше половина кнопок веде в
+  // порожнечу, а реальний інструмент, якого немає в списку, не знайти.
+  const tools = useMemo(() => {
+    const found = new Set(items.map((i) => i.tool).filter(Boolean));
+    return hasRealWorks ? [...found] : [...TOOLS];
+  }, [items, hasRealWorks]);
 
   return (
     <div className="relative overflow-hidden">
@@ -130,7 +157,7 @@ export default function GalleryPage() {
             >
               Усі
             </button>
-            {TOOLS.map((t) => (
+            {tools.map((t) => (
               <button
                 key={t}
                 onClick={() => setTool(t)}
@@ -146,7 +173,11 @@ export default function GalleryPage() {
           </div>
         </Reveal>
 
-        {filtered.length === 0 ? (
+        {error && <p className="mb-6 text-sm text-danger">{error}</p>}
+
+        {loading ? (
+          <p className="py-16 text-center text-md text-ink-mute">Завантажуємо роботи…</p>
+        ) : filtered.length === 0 ? (
           <p className="py-16 text-center text-md text-ink-mute">
             За цим інструментом робіт поки немає.
           </p>

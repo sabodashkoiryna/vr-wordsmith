@@ -117,7 +117,10 @@ const schema = a.schema({
       tool: a.string(), // CoSpaces Edu / ThingLink / 360°-відео / AR
       moduleCode: a.string(),
       coverImageKey: a.string(),
-      externalUrl: a.string(),
+      /** Копії файлів студента під public/gallery/*. НЕ ключі з
+       *  submissions/{entity_id}/*: той префікс гостю не відкритий і
+       *  відкритим бути не може — там лежать роботи всіх студентів. */
+      fileKeys: a.string().array(),
       submissionId: a.id(),
     })
     .authorization((allow) => [
@@ -235,7 +238,6 @@ const schema = a.schema({
       title: a.string().required(),
       instructions: a.string(),
       maxPoints: a.float().required(), // 40
-      allowExternalLink: a.boolean(),
       maxFileSizeMb: a.integer(),
     })
     .secondaryIndexes((index) => [index('moduleId')])
@@ -339,7 +341,9 @@ const schema = a.schema({
       moduleId: a.id(), // курсовий проєкт не належить модулю
       title: a.string().required(),
       description: a.string(),
-      externalUrl: a.string(),
+      /** Робота здається ЛИШЕ файлами. Поля з посиланням немає свідомо:
+       *  сцена в CoSpaces живе рівно доти, доки живий чужий акаунт, а
+       *  галерея з таких посилань за рік стає добіркою 404. */
       fileKeys: a.string().array(),
       status: a.string().required(), // 'draft'|'submitted'|'returned'|'graded'
       submittedAt: a.datetime(),
