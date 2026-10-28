@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Button from '../../ui/Button';
+import { Drawer } from './ui/adminUi';
+import CertificateDocument, { type CertificateData } from '../certificate/CertificateDocument';
 import { client } from '../../lib/amplify-client';
 import { unwrap } from '../../lib/unwrap';
 
@@ -14,6 +16,8 @@ type Slot = {
 
 type Cert = {
   id: string;
+  hours: number | null;
+  courseTitle: string;
   certificateNumber: string;
   verificationCode: string;
   studentFullName: string;
@@ -39,15 +43,22 @@ export default function CertificatesAdmin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Адмін має бачити САМ документ, а не лише рядок із номером: саме по ньому
+  // помітно, що ПІБ зіпсований або курс названо не так.
+  const [preview, setPreview] = useState<CertificateData | null>(null);
+  const [instructor, setInstructor] = useState<{ fullName: string; position: string | null } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       setError(null);
-      const [nums, cs] = await Promise.all([
+      const [nums, cs, teachers] = await Promise.all([
         unwrap(client.models.CertificateNumber.list({ limit: 1000 })),
         unwrap(client.models.Certificate.list({ limit: 1000 })),
+        unwrap(client.models.Instructor.list({ limit: 5 })),
       ]);
+      const t = [...teachers].sort((a, b) => a.order - b.order)[0];
+      setInstructor(t ? { fullName: t.fullName, position: t.position ?? null } : null);
       setSlots(
         nums
           .map((n) => ({
@@ -64,6 +75,8 @@ export default function CertificatesAdmin() {
         cs
           .map((c) => ({
             id: c.id,
+            hours: c.hours ?? null,
+            courseTitle: c.courseTitle,
             certificateNumber: c.certificateNumber,
             verificationCode: c.verificationCode,
             studentFullName: c.studentFullName,
@@ -318,14 +331,46 @@ export default function CertificatesAdmin() {
                   {new Date(c.issuedAt).toLocaleDateString('uk-UA')}
                 </span>
                 {c.revokedAt && <span className="font-mono text-2xs text-danger">ВІДКЛИКАНО</span>}
-                <span className="ml-auto font-mono text-2xs text-violet-300">
-                  {c.verificationCode}
+                <span className="ml-auto flex items-center gap-3">
+                  <span className="font-mono text-2xs text-violet-300">{c.verificationCode}</span>
+                  <button
+                    onClick={() =>
+                      setPreview({
+                        certificateNumber: c.certificateNumber,
+                        verificationCode: c.verificationCode,
+                        studentFullName: c.studentFullName,
+                        courseTitle: c.courseTitle,
+                        hours: c.hours,
+                        totalPoints: c.totalPoints,
+                        maxPoints: c.maxPoints,
+                        issuedAt: c.issuedAt,
+                        instructorName: instructor?.fullName ?? null,
+                        instructorPosition: instructor?.position ?? null,
+                      })
+                    }
+                    className="cursor-pointer rounded-full border-none bg-space-600 px-3 py-1.5 font-mono text-2xs text-ink transition-colors hover:bg-space-500"
+                  >
+                    Переглянути
+                  </button>
                 </span>
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      <Drawer
+        open={!!preview}
+        title={preview ? `Сертифікат № ${preview.certificateNumber}` : ''}
+        onClose={() => setPreview(null)}
+        wide
+      >
+        {preview && (
+          <div className="overflow-hidden rounded-[var(--radius-lg)] bg-white">
+            <CertificateDocument data={preview} />
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 }

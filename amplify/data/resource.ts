@@ -3,6 +3,7 @@ import { manageAdmins } from '../functions/manage-admins/resource';
 import { submitQuizAttempt } from '../functions/submit-quiz-attempt/resource';
 import { gradeAssignment } from '../functions/grade-assignment/resource';
 import { issueCertificate } from '../functions/issue-certificate/resource';
+import { verifyCertificate } from '../functions/verify-certificate/resource';
 
 /*
  * ТРИ АРХЕТИПИ АВТОРИЗАЦІЇ. Правил на рівні ПОЛЯ немає навмисно: клієнт
@@ -500,6 +501,20 @@ const schema = a.schema({
     maxPoints: a.float(),
   }),
 
+  /** Публічна відповідь верифікації. Жодного studentId чи email — лише те,
+   *  що й так надруковано на документі. */
+  CertificateCheck: a.customType({
+    found: a.boolean().required(),
+    revoked: a.boolean(),
+    certificateNumber: a.string(),
+    studentFullName: a.string(),
+    courseTitle: a.string(),
+    hours: a.integer(),
+    totalPoints: a.float(),
+    maxPoints: a.float(),
+    issuedAt: a.datetime(),
+  }),
+
   /** studentId береться з event.identity.sub, НЕ з аргументу. */
   submitQuizAttempt: a
     .mutation()
@@ -557,6 +572,16 @@ const schema = a.schema({
     .authorization((allow) => [allow.groups(['Admins'])])
     .handler(a.handler.function(issueCertificate)),
 
+  /** Доступний ГОСТЮ: саме в цьому сенс публічної верифікації. Перебір
+   *  кодів дає лише ті дані, що надруковані на документі, який людина й так
+   *  тримає в руках. */
+  verifyCertificate: a
+    .query()
+    .arguments({ code: a.string().required() })
+    .returns(a.ref('CertificateCheck'))
+    .authorization((allow) => [allow.guest(), allow.authenticated()])
+    .handler(a.handler.function(verifyCertificate)),
+
   promoteToAdmin: a
     .mutation()
     .arguments({ userId: a.string().required(), action: a.string() })
@@ -572,6 +597,7 @@ const schema = a.schema({
     allow.resource(submitQuizAttempt),
     allow.resource(gradeAssignment),
     allow.resource(issueCertificate),
+    allow.resource(verifyCertificate),
   ]);
 
 export type Schema = ClientSchema<typeof schema>;

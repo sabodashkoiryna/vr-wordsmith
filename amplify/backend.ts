@@ -6,6 +6,7 @@ import { manageAdmins } from './functions/manage-admins/resource';
 import { submitQuizAttempt } from './functions/submit-quiz-attempt/resource';
 import { gradeAssignment } from './functions/grade-assignment/resource';
 import { issueCertificate } from './functions/issue-certificate/resource';
+import { verifyCertificate } from './functions/verify-certificate/resource';
 
 defineBackend({
   auth,
@@ -15,4 +16,5 @@ defineBackend({
   submitQuizAttempt,
   gradeAssignment,
   issueCertificate,
+  verifyCertificate,
 });

@@ -32,6 +32,7 @@ const LearnPage = lazy(() => import('./features/learn/LearnPage'));
 const LessonPage = lazy(() => import('./features/learn/LessonPage'));
 const ProjectPage = lazy(() => import('./features/learn/ProjectPage'));
 const CertificatePage = lazy(() => import('./features/certificate/CertificatePage'));
+const VerifyPage = lazy(() => import('./features/certificate/VerifyPage'));
 // Черга оцінювання тягне aws-amplify/storage заради посилань на файли
 // студентів — окремим чанком, як і решта адмінських екранів.
 const GradingQueue = lazy(() => import('./features/admin/GradingQueue'));
@@ -104,6 +105,14 @@ export default function App() {
                     <CertificatePage />
                   </Suspense>
                 </RequireAuth>
+              }
+            />
+            <Route
+              path="/certificate/verify/:code?"
+              element={
+                <Suspense fallback={<Loading />}>
+                  <VerifyPage />
+                </Suspense>
               }
             />
             <Route path="/login" element={<LoginPage />} />
