@@ -14,6 +14,7 @@ const SECTIONS: { title: string; items: { to: string; label: string; end?: boole
       { to: '/admin', label: 'Огляд', end: true },
       { to: '/admin/modules', label: 'Модулі' },
       { to: '/admin/lessons', label: 'Уроки' },
+      { to: '/admin/quizzes', label: 'Тести' },
       { to: '/admin/resources', label: 'Ресурси' },
       { to: '/admin/gallery', label: 'Галерея' },
       { to: '/admin/diagnostics', label: 'Діагностика' },

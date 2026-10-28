@@ -21,6 +21,7 @@ import ResourcesAdmin from './pages/admin/content/ResourcesAdmin';
 import DiagnosticsAdmin from './pages/admin/content/DiagnosticsAdmin';
 import LessonsAdmin from './pages/admin/content/LessonsAdmin';
 import GalleryAdmin from './pages/admin/content/GalleryAdmin';
+import QuizzesAdmin from './pages/admin/content/QuizzesAdmin';
 
 // Кабінет тягне за собою react-markdown. Він потрібен лише залогіненим і лише
 // в уроці, тож іде окремим чанком — інакше кожен відвідувач лендінгу
@@ -140,6 +141,7 @@ export default function App() {
               />
               <Route path="modules" element={<ModulesAdmin />} />
               <Route path="lessons" element={<LessonsAdmin />} />
+              <Route path="quizzes" element={<QuizzesAdmin />} />
               <Route path="gallery" element={<GalleryAdmin />} />
               <Route path="resources" element={<ResourcesAdmin />} />
               <Route path="diagnostics" element={<DiagnosticsAdmin />} />
