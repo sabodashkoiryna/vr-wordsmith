@@ -442,7 +442,11 @@ function FieldControl({
         />
       )}
 
-      {field.hint && <span className="text-sm text-ink-mute">{field.hint}</span>}
+      {/* Поле-зображення малює підказку саме, причому ховає її, коли є
+          помилка. Якби ми надрукували її ще й тут, вона двоїлася б. */}
+      {field.hint && field.type !== 'image' && (
+        <span className="text-sm text-ink-mute">{field.hint}</span>
+      )}
     </label>
   );
 }
