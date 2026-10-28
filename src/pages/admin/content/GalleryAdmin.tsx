@@ -37,8 +37,9 @@ const FIELDS: Field[] = [
   {
     key: 'coverImageKey',
     label: 'Обкладинка',
-    type: 'text',
-    hint: 'Ключ файлу в public/gallery/ — єдиний префікс, доступний гостям.',
+    type: 'image',
+    prefix: 'public/gallery/',
+    hint: 'Лягає в public/gallery/ — єдиний префікс, відкритий гостям на читання.',
   },
 ];
 

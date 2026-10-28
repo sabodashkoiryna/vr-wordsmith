@@ -12,9 +12,11 @@ const SECTIONS: { title: string; items: { to: string; label: string; end?: boole
     title: 'КОНТЕНТ',
     items: [
       { to: '/admin', label: 'Огляд', end: true },
+      { to: '/admin/course', label: 'Курс і викладач' },
       { to: '/admin/modules', label: 'Модулі' },
       { to: '/admin/lessons', label: 'Уроки' },
       { to: '/admin/quizzes', label: 'Тести' },
+      { to: '/admin/project', label: 'Курсовий проєкт' },
       { to: '/admin/resources', label: 'Ресурси' },
       { to: '/admin/gallery', label: 'Галерея' },
       { to: '/admin/diagnostics', label: 'Діагностика' },

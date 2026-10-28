@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import ImageField from './ImageField';
 import {
   AdminButton,
   Banner,
@@ -17,6 +18,7 @@ export type FieldType =
   | 'select'
   | 'boolean'
   | 'stringArray'
+  | 'image'
   | 'json';
 
 export type Field = {
@@ -30,6 +32,8 @@ export type Field = {
   required?: boolean;
   /** Ширина колонки в таблиці, напр. '90px' або 'minmax(0,2fr)'. */
   width?: string;
+  /** Для type: 'image' — префікс у S3, напр. 'public/gallery/'. */
+  prefix?: string;
 };
 
 export type Item = Record<string, unknown> & { id?: string };
@@ -406,6 +410,13 @@ function FieldControl({
           <option value="true">так</option>
           <option value="false">ні</option>
         </select>
+      ) : field.type === 'image' ? (
+        <ImageField
+          value={value}
+          onChange={onChange}
+          prefix={field.prefix ?? 'public/media/'}
+          hint={field.hint}
+        />
       ) : field.type === 'markdown' ? (
         /* Markdown отримує висоту екрана: лекція на півтори тисячі слів у
            полі на чотири рядки не редагується, а переписується наосліп. */
