@@ -446,7 +446,21 @@ async function main() {
   console.log(`    (балів у студента: ${studentTotal} з порогом ${course?.passingPoints})`);
 
   const issued = await unwrap(client.mutations.issueCertificate({ studentId: studentSub }));
-  if (studentTotal >= (course?.passingPoints ?? 70)) {
+  if (studentTotal < (course?.passingPoints ?? 70)) {
+    check('нижче порогу сертифікат НЕ видається',
+      issued?.eligible === false && issued?.reason === 'insufficient_points',
+      String(issued?.reason));
+  } else if (issued?.reason === 'already_issued') {
+    // Видачу з пулу на цьому акаунті вже не перевірити: сертифікат у нього є,
+    // і мутація — правильно — повертає наявний. Видаляти його, щоб звільнити
+    // місце, тест НЕ має права: документ видано поза тестом, а разом із ним
+    // згорів би і номер. Саме цим перший варіант цієї перевірки знищив
+    // сертифікат № 0000, залишивши номер у стані used без документа.
+    console.log(`    ! У студента вже є сертифікат № ${issued.certificateNumber} — видачу з пулу пропущено.`);
+    console.log('      Для повної перевірки потрібен студент без сертифіката.');
+    check('повторна видача повертає наявний документ, а не новий',
+      !!issued.certificateId && !!issued.certificateNumber);
+  } else {
     check('сертифікат видано', issued?.eligible === true && !!issued?.certificateNumber);
     check('номер узято з пулу, а не вигадано',
       testNumbers.includes(issued?.certificateNumber ?? '') ||
@@ -464,17 +478,15 @@ async function main() {
 
     const stillFree = (await unwrap(client.models.CertificateNumber.list({ limit: 1000 })))
       .filter((n) => n.status === 'free' && testNumbers.includes(n.number));
-    check('другий номер не витрачено', stillFree.length === 1, `${stillFree.length}`);
+    check('запасний номер не витрачено', stillFree.length === 1, `${stillFree.length}`);
 
-    // Прибираємо за собою: сертифікат і внесені номери.
-    if (issued?.certificateId) {
+    // Прибираємо ЛИШЕ те, що створив цей прогін: документ під тестовим
+    // номером. Сертифікат під будь-яким іншим номером тест не створював —
+    // і видаляти його не має права.
+    if (issued?.certificateId && testNumbers.includes(issued.certificateNumber ?? '')) {
       await client.models.Certificate.delete({ id: issued.certificateId });
       console.log('    (тестовий сертифікат видалено)');
     }
-  } else {
-    check('нижче порогу сертифікат НЕ видається',
-      issued?.eligible === false && issued?.reason === 'insufficient_points',
-      String(issued?.reason));
   }
 
   for (const id of createdNumbers) {
