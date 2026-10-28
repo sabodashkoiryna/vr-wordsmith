@@ -20,6 +20,7 @@
 import { Amplify } from 'aws-amplify';
 import { generateClient } from 'aws-amplify/data';
 import { signIn, signOut } from 'aws-amplify/auth';
+import { uploadData, getUrl, copy, remove } from 'aws-amplify/storage';
 import { readFileSync } from 'node:fs';
 import type { Schema } from '../amplify/data/resource';
 
@@ -357,6 +358,24 @@ async function main() {
       id: submissionId, status: 'submitted', submittedAt: new Date().toISOString(),
     }));
   }
+  // Робота — це ФАЙЛИ. Перевіряємо справжнє завантаження в S3, а не лише
+  // рядок у таблиці: шлях submissions/{entity_id}/* будується з identityId,
+  // і помилка в ньому видно тільки тут.
+  const fileStamp = Date.now();
+  const uploaded = await uploadData({
+    path: ({ identityId }) => `submissions/${identityId}/${fileStamp}-e2e-tech-card.txt`,
+    data: new Blob(['Технологічна карта, створена наскрізним тестом.'], { type: 'text/plain' }),
+  }).result;
+  check('файл завантажено в submissions/{entity_id}/', uploaded.path.startsWith('submissions/'), uploaded.path);
+
+  await unwrap(client.models.AssignmentSubmission.update({
+    id: submissionId!, fileKeys: [uploaded.path],
+  }));
+  const reread = await unwrap(client.models.AssignmentSubmission.get({ id: submissionId! }));
+  check('ключ файлу збережено в поданні', (reread?.fileKeys ?? []).includes(uploaded.path));
+  check('у поданні немає поля з посиланням',
+    !Object.keys(reread ?? {}).some((k) => /externalurl|link/i.test(k)));
+
   check('подання створено', !!submissionId);
   check('у поданні немає поля з балом',
     !Object.keys(mySubs[0] ?? {}).some((k) => /points|score|grade|mark/i.test(k)));
@@ -478,7 +497,58 @@ async function main() {
   check('жоден опублікований запис не має імені автора без згоди',
     !gallery.some((g) => g.publishState === 'published' && g.authorDisplayName && g.consentGiven !== true));
 
-  await signOut();
+  // Публікація роботи: копія файлу в public/gallery/, а не посилання на
+  // приватний префікс. Саме тут ламається найтихіше — запис у галереї є,
+  // картка виглядає цілою, а файл гостю не відкривається.
+  const publicKey = `public/gallery/${submissionId}/${fileStamp}-e2e-tech-card.txt`;
+  let galleryId: string | null = null;
+  try {
+    const copied = await copy({
+      source: { path: uploaded.path },
+      destination: { path: publicKey },
+    });
+    check('адмін копіює файл роботи в public/gallery/', copied.path === publicKey, copied.path);
+
+    const created = await unwrap(client.models.GalleryItem.create({
+      order: 900,
+      publishState: 'published',
+      title: 'Перевірочна робота (E2E)',
+      description: 'Створено наскрізним тестом.',
+      consentGiven: false,
+      fileKeys: [publicKey],
+      submissionId,
+    }));
+    galleryId = created?.id ?? null;
+    check('запис галереї створено з файлами', (created?.fileKeys ?? []).length === 1);
+
+    await signOut();
+    // Гість — не просто «не залогінений адмін»: він ходить через IAM
+    // unauth-роль, у якої інший набір дозволів. Перевіряти це залогіненим
+    // безглуздо: збій асиметричний і видно лише звідси.
+    const guestUrl = await getUrl({ path: publicKey });
+    const res = await fetch(guestUrl.url.toString());
+    check('ГІСТЬ відкриває файл з галереї', res.ok, `HTTP ${res.status}`);
+
+    const guestItems = await unwrap(
+      client.models.GalleryItem.list({ limit: 500, authMode: 'identityPool' }),
+    );
+    check('гість бачить опублікований запис', guestItems.some((g) => g.id === galleryId));
+
+    const privateUrl = await getUrl({ path: uploaded.path });
+    const denied = await fetch(privateUrl.url.toString());
+    check('ГІСТЬ НЕ відкриває оригінал із submissions/', !denied.ok, `HTTP ${denied.status}`);
+  } finally {
+    // Прибираємо за собою: запис галереї й копію файлу створив тест, вони не
+    // є даними курсу. Оригінал подання лишаємо — його чіпати не можна.
+    await as('admin');
+    if (galleryId) await unwrap(client.models.GalleryItem.delete({ id: galleryId }));
+    try {
+      await remove({ path: publicKey });
+    } catch {
+      // Копія могла не створитися — тоді видаляти нічого.
+    }
+    await signOut();
+  }
 
   /* ── підсумок ───────────────────────────────────────────────────────── */
   console.log(`\n${'═'.repeat(66)}`);

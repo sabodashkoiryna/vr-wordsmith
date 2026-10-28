@@ -53,12 +53,20 @@ function Card({ item, index }: { item: LiveGalleryItem; index: number }) {
     <>
       <Cover item={item} />
       <div className="flex flex-1 flex-col p-6">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-space-600 px-2.5 py-1 font-mono text-2xs tracking-widest text-violet-300">
-            {item.tool}
-          </span>
-          <span className="font-mono text-2xs tracking-widest text-ink-mute">{item.subject}</span>
-        </div>
+        {(item.tool || item.subject) && (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            {item.tool && (
+              <span className="rounded-full bg-space-600 px-2.5 py-1 font-mono text-2xs tracking-widest text-violet-300">
+                {item.tool}
+              </span>
+            )}
+            {item.subject && (
+              <span className="font-mono text-2xs tracking-widest text-ink-mute">
+                {item.subject}
+              </span>
+            )}
+          </div>
+        )}
         <h3 className="font-display text-lg leading-snug text-ink">{item.title}</h3>
         <p className="mt-3 flex-1 text-sm leading-relaxed text-ink-soft">{item.description}</p>
         {item.files.length > 0 && (
