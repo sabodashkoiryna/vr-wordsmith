@@ -9,6 +9,7 @@ export type GalleryFile = { name: string; url: string; isImage: boolean };
 export type LiveGalleryItem = GalleryItem & {
   coverUrl?: string;
   files: GalleryFile[];
+  sourceUrl?: string;
 };
 
 const IMAGE_RE = /\.(png|jpe?g|webp|gif|avif)$/i;
@@ -82,6 +83,7 @@ export function useGalleryItems() {
               coverSeed: i,
               coverUrl: cover?.url.toString(),
               files,
+              sourceUrl: r.sourceUrl ?? undefined,
             } satisfies LiveGalleryItem;
           }),
         );

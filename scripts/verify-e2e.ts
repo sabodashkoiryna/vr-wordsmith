@@ -499,11 +499,12 @@ async function main() {
 
   const gallery = await unwrap(client.models.GalleryItem.list({ limit: 500 }));
   check('є записи галереї', gallery.length > 0);
-  // Робота без жодного файлу в галереї — це картка ні про що: посилань ми
-  // не приймаємо, отже показувати нічого.
-  check('опубліковані записи мають файли в public/gallery/',
+  // Картка без файлів І без посилання — це картка ні про що. Одне з двох
+  // мусить бути: робота студента приходить файлами, запис, який веде сам
+  // адмін, може бути посиланням на розгорнуту сцену.
+  check('опублікований запис має файли або посилання на джерело',
     gallery.filter((g) => g.publishState === 'published')
-      .every((g) => (g.fileKeys ?? []).length > 0));
+      .every((g) => (g.fileKeys ?? []).length > 0 || !!g.sourceUrl));
   check('жоден ключ галереї не вказує на приватний префікс submissions/',
     !gallery.some((g) => (g.fileKeys ?? []).some((k) => !!k && !k.startsWith('public/'))));
   check('жоден опублікований запис не має імені автора без згоди',

@@ -69,6 +69,17 @@ function Card({ item, index }: { item: LiveGalleryItem; index: number }) {
         )}
         <h3 className="font-display text-lg leading-snug text-ink">{item.title}</h3>
         <p className="mt-3 flex-1 text-sm leading-relaxed text-ink-soft">{item.description}</p>
+        {item.sourceUrl && (
+          <a
+            href={item.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-5 self-start rounded-full bg-violet-500/15 px-3.5 py-1.5 font-mono text-2xs tracking-widest text-violet-300 no-underline transition-colors hover:bg-violet-500/25"
+          >
+            ВІДКРИТИ ДЖЕРЕЛО ↗
+          </a>
+        )}
+
         {item.files.length > 0 && (
           <div className="mt-5 flex flex-wrap gap-2">
             {item.files.map((file) => (
