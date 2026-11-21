@@ -3,6 +3,7 @@ import Button from '../../ui/Button';
 import { PageHeader } from './ui/adminUi';
 import { client } from '../../lib/amplify-client';
 import { unwrap } from '../../lib/unwrap';
+import { fileLabel, openStoredFile } from '../../lib/storageFiles';
 
 type Submission = {
   id: string;
@@ -169,13 +170,8 @@ export default function GradingQueue() {
   }
 
   async function openFile(key: string) {
-    try {
-      const { getUrl } = await storage();
-      const { url } = await getUrl({ path: key });
-      window.open(url.toString(), '_blank', 'noopener');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не вдалося відкрити файл');
-    }
+    const problem = await openStoredFile(key);
+    if (problem) setError(problem);
   }
 
   async function submitGrade(returnForRevision: boolean) {
@@ -389,7 +385,7 @@ export default function GradingQueue() {
                           onClick={() => openFile(k)}
                           className="cursor-pointer rounded-full border-none bg-space-600 px-4 py-2 font-mono text-2xs text-ink transition-colors hover:bg-space-500"
                         >
-                          {k.split('/').pop()?.replace(/^\d+-/, '')} ↓
+                          {fileLabel(k)} ↗
                         </button>
                       ))}
                     </div>
@@ -489,7 +485,7 @@ export default function GradingQueue() {
                                     setPublishPick((p) => ({ ...p, [k]: e.target.checked }))
                                   }
                                 />
-                                {k.split('/').pop()?.replace(/^d+-/, '')}
+                                {fileLabel(k)}
                               </label>
                             </li>
                           ))}

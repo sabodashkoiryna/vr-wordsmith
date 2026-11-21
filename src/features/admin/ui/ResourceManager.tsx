@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import ImageField from './ImageField';
+import FilesField from './FilesField';
 import {
   AdminButton,
   Banner,
@@ -19,6 +20,7 @@ export type FieldType =
   | 'boolean'
   | 'stringArray'
   | 'image'
+  | 'files'
   | 'json';
 
 export type Field = {
@@ -32,7 +34,7 @@ export type Field = {
   required?: boolean;
   /** Ширина колонки в таблиці, напр. '90px' або 'minmax(0,2fr)'. */
   width?: string;
-  /** Для type: 'image' — префікс у S3, напр. 'public/gallery/'. */
+  /** Для type: 'image' і 'files' — префікс у S3, напр. 'public/gallery/'. */
   prefix?: string;
 };
 
@@ -54,7 +56,7 @@ type Props = {
 /* --- перетворення значень --------------------------------------------- */
 
 function toForm(f: Field, v: unknown): string {
-  if (f.type === 'stringArray') return Array.isArray(v) ? v.join('\n') : '';
+  if (f.type === 'stringArray' || f.type === 'files') return Array.isArray(v) ? v.join('\n') : '';
   if (f.type === 'boolean') return v === true ? 'true' : v === false ? 'false' : '';
   if (f.type === 'json') {
     if (v == null) return '';
@@ -73,7 +75,7 @@ function toForm(f: Field, v: unknown): string {
 function fromForm(f: Field, raw: string): unknown {
   if (f.type === 'number') return raw === '' ? null : Number(raw);
   if (f.type === 'boolean') return raw === '' ? null : raw === 'true';
-  if (f.type === 'stringArray')
+  if (f.type === 'stringArray' || f.type === 'files')
     return raw
       .split('\n')
       .map((s) => s.trim())
@@ -417,6 +419,13 @@ function FieldControl({
           prefix={field.prefix ?? 'public/media/'}
           hint={field.hint}
         />
+      ) : field.type === 'files' ? (
+        <FilesField
+          value={value}
+          onChange={onChange}
+          prefix={field.prefix ?? 'public/media/'}
+          hint={field.hint}
+        />
       ) : field.type === 'markdown' ? (
         /* Markdown отримує висоту екрана: лекція на півтори тисячі слів у
            полі на чотири рядки не редагується, а переписується наосліп. */
@@ -442,9 +451,9 @@ function FieldControl({
         />
       )}
 
-      {/* Поле-зображення малює підказку саме, причому ховає її, коли є
+      {/* Поля з файлами малюють підказку самі, причому ховають її, коли є
           помилка. Якби ми надрукували її ще й тут, вона двоїлася б. */}
-      {field.hint && field.type !== 'image' && (
+      {field.hint && field.type !== 'image' && field.type !== 'files' && (
         <span className="text-sm text-ink-mute">{field.hint}</span>
       )}
     </label>

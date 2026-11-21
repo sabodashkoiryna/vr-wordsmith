@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AdminButton } from './adminUi';
-
-const storage = () => import('aws-amplify/storage');
+import { openStoredFile, storedFileUrl, uploadToPrefix } from '../../../lib/storageFiles';
 
 const MAX_MB = 10;
 
@@ -38,9 +37,7 @@ export default function ImageField({
       return;
     }
     try {
-      const { getUrl } = await storage();
-      const { url } = await getUrl({ path: value });
-      setPreview(url.toString());
+      setPreview(await storedFileUrl(value));
     } catch {
       // Ключ є, а файлу немає — показуємо це, а не порожнє місце: інакше
       // зламану обкладинку помітять аж на публічній сторінці.
@@ -65,12 +62,7 @@ export default function ImageField({
     setBusy(true);
     setError(null);
     try {
-      const { uploadData } = await storage();
-      // Мітка часу спереду: інакше друге завантаження однойменного файлу
-      // мовчки затерло б обкладинку іншого запису.
-      const name = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-      const result = await uploadData({ path: `${prefix}${name}`, data: file }).result;
-      onChange(result.path);
+      onChange(await uploadToPrefix(prefix, file));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не вдалося завантажити');
     } finally {
@@ -103,6 +95,18 @@ export default function ImageField({
           />
           {busy ? 'Завантажуємо…' : value ? 'Замінити' : 'Обрати файл'}
         </label>
+
+        {value && (
+          <AdminButton
+            onClick={async () => {
+              const problem = await openStoredFile(value);
+              if (problem) setError(problem);
+            }}
+            disabled={busy}
+          >
+            Відкрити ↗
+          </AdminButton>
+        )}
 
         {value && (
           <AdminButton variant="danger" onClick={() => onChange('')} disabled={busy}>

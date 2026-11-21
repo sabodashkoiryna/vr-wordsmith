@@ -4,6 +4,7 @@ import Field from '../../ui/Field';
 import { client } from '../../lib/amplify-client';
 import { unwrap } from '../../lib/unwrap';
 import { useAuth } from '../../context/AuthContext';
+import { fileLabel, openStoredFile } from '../../lib/storageFiles';
 
 type Submission = {
   id: string;
@@ -81,7 +82,7 @@ export default function ProjectSubmission({
         });
         setTitle(row.title);
         setDescription(row.description ?? '');
-        setUploads(keys.map((k) => ({ name: k.split('/').pop() ?? k, key: k })));
+        setUploads(keys.map((k) => ({ name: fileLabel(k), key: k })));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не вдалося завантажити подання');
@@ -126,6 +127,11 @@ export default function ProjectSubmission({
         setUploading(null);
       }
     }
+  }
+
+  async function openFile(key: string) {
+    const problem = await openStoredFile(key);
+    if (problem) setError(problem);
   }
 
   async function dropFile(u: Upload) {
@@ -233,7 +239,16 @@ export default function ProjectSubmission({
                   key={u.key}
                   className="flex items-center gap-3 rounded-[var(--radius-sm)] bg-space-700 px-4 py-2.5"
                 >
-                  <span className="flex-1 truncate text-sm text-ink">{u.name}</span>
+                  {/* Прикріплений файл має відкриватися: інакше перевірити,
+                      що здаєш саме ту версію, можна лише по імені. */}
+                  <button
+                    type="button"
+                    onClick={() => void openFile(u.key)}
+                    title={u.key}
+                    className="flex-1 cursor-pointer truncate border-none bg-transparent p-0 text-left text-sm text-ink hover:text-violet-300"
+                  >
+                    {u.name} ↗
+                  </button>
                   {!locked && (
                     <button
                       type="button"
